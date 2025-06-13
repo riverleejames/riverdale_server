@@ -28,8 +28,8 @@ services:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 60s
 
   # qBittorrent - Torrent client (runs through VPN)
   qbittorrent:
@@ -37,8 +37,7 @@ services:
     container_name: qbittorrent
     network_mode: "service:gluetun"  # Use gluetun's network (VPN)
     depends_on:
-      gluetun:
-        condition: service_healthy
+      - gluetun
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
