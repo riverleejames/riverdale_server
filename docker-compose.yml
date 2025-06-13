@@ -52,6 +52,8 @@ services:
   jellyfin:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
+    group_add:
+      - "992"  # Allow access to video devices for hardware acceleration (render group)
     ports:
       - "${JELLYFIN_PORT}:8096"
     environment:
@@ -62,9 +64,11 @@ services:
       - ${CONFIG_ROOT}/jellyfin:/config
       - ${MEDIA_ROOT}:/media
       - /tmp:/tmp
-    # Optional: for hardware acceleration (uncomment if you have Intel graphics)
-    # devices:
-    #   - /dev/dri:/dev/dri
+      - /tmp/jellyfin:/cache/transcodes
+    # Intel QuickSync hardware acceleration
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card1:/dev/dri/card1
     restart: unless-stopped
 
   # Sonarr - TV Show management
