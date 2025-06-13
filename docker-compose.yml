@@ -17,7 +17,7 @@ services:
         echo 'Creating required directories...'
         mkdir -p /media/movies /media/tv
         mkdir -p /downloads/complete /downloads/incomplete
-        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/qbittorrent /config/gluetun
+        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
         echo 'Directory structure ready!'
@@ -34,9 +34,9 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      - "${QBITTORRENT_PORT}:8080"  # qBittorrent Web UI
-      - "6881:6881"    # qBittorrent torrent port
-      - "6881:6881/udp"  # qBittorrent torrent port UDP
+      - "${TRANSMISSION_PORT}:9091"  # Transmission Web UI
+      - "51413:51413"    # Transmission torrent port
+      - "51413:51413/udp"  # Transmission torrent port UDP
     volumes:
       - ${CONFIG_ROOT}/gluetun:/gluetun
     environment:
@@ -55,10 +55,10 @@ services:
       retries: 5
       start_period: 60s
 
-  # qBittorrent - Torrent client (runs through VPN)
-  qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent
+  # Transmission - Torrent client (runs through VPN)
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
     network_mode: "service:gluetun"  # Use gluetun's network (VPN)
     depends_on:
       - gluetun
@@ -66,10 +66,12 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - WEBUI_PORT=8080
+      - USER=${USERNAME}
+      - PASS=${PASSWORD}
     volumes:
-      - ${CONFIG_ROOT}/qbittorrent:/config
+      - ${CONFIG_ROOT}/transmission:/config
       - ${DOWNLOADS_ROOT}:/downloads
+      - ${DOWNLOADS_ROOT}/watch:/watch
     restart: unless-stopped
 
   # Jellyfin - Media Server
