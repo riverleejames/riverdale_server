@@ -8,7 +8,7 @@ data/config/gluetun/*
 data/config/jellyfin/*
 data/config/sonarr/*
 data/config/radarr/*
-data/config/qbittorrent/*
+data/config/transmission/*
 data/config/prowlarr/*
 
 
