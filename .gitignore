@@ -1,1 +1,24 @@
+# Environment variables
 .env
+
+# Gluetun configuration (may contain sensitive VPN data)
+data/config/gluetun/*
+
+# Application data and configs (contains databases and settings)
+data/config/jellyfin/*
+data/config/sonarr/*
+data/config/radarr/*
+data/config/qbittorrent/*
+
+# Downloaded content and media
+data/downloads/*
+data/media/*
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+.DS_Store
+Thumbs.db
