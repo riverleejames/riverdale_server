@@ -103,6 +103,20 @@ services:
       - ${DOWNLOADS_ROOT}:/downloads
     restart: unless-stopped
 
+  # Prowlarr - Indexer management
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    ports:
+      - "${PROWLARR_PORT}:9696"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/prowlarr:/config
+    restart: unless-stopped
+
 networks:
   default:
     name: riverdale_network

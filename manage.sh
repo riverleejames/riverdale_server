@@ -28,7 +28,7 @@ show_help() {
     echo -e "  ${YELLOW}logs <service>${NC} - Show logs for specific service"
     echo -e "  ${YELLOW}restart <service>${NC} - Restart specific service"
     echo ""
-    echo "Services: gluetun, qbittorrent, jellyfin, sonarr, radarr"
+    echo "Services: gluetun, qbittorrent, jellyfin, sonarr, radarr, prowlarr"
 }
 
 case "$1" in

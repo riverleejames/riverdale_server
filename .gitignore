@@ -9,6 +9,8 @@ data/config/jellyfin/*
 data/config/sonarr/*
 data/config/radarr/*
 data/config/qbittorrent/*
+data/config/prowlarr/*
+
 
 # Downloaded content and media
 data/downloads/*

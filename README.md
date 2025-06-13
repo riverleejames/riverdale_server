@@ -4,6 +4,7 @@ A complete media server setup using Docker Compose with:
 - **Jellyfin** - Media server for streaming movies and TV shows
 - **Sonarr** - TV show collection manager
 - **Radarr** - Movie collection manager  
+- **Prowlarr** - Indexer manager for Sonarr and Radarr
 - **qBittorrent** - Torrent client
 - **Gluetun** - VPN container (NordVPN) for secure torrenting
 
@@ -61,6 +62,7 @@ Once running, access your services at:
 - **Jellyfin**: http://localhost:8096
 - **Sonarr**: http://localhost:8989  
 - **Radarr**: http://localhost:7878
+- **Prowlarr**: http://localhost:9696
 - **qBittorrent**: http://localhost:8080
 
 ## Configuration
@@ -80,6 +82,14 @@ Once running, access your services at:
 1. Add download client (qBittorrent at `gluetun:8080`)
 2. Add root folder `/movies`
 3. Configure indexers for content discovery
+
+### Prowlarr Setup
+1. Complete initial setup wizard
+2. Add indexers (torrent sites, usenet providers)
+3. Connect to applications:
+   - Add Sonarr: http://sonarr:8989
+   - Add Radarr: http://radarr:7878
+4. Prowlarr will automatically sync indexers to both apps
 
 ### Jellyfin Setup
 1. Add media libraries:
