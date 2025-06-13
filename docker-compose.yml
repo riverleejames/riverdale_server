@@ -16,7 +16,9 @@ services:
       sh -c "
         echo 'Creating required directories...'
         mkdir -p /media/movies /media/tv
-        mkdir -p /downloads/complete /downloads/incomplete
+        mkdir -p /downloads/complete/movies /downloads/complete/tv /downloads/complete/tv-sonarr
+        mkdir -p /downloads/incomplete
+        mkdir -p /downloads/watch
         mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
@@ -62,6 +64,7 @@ services:
     network_mode: "service:gluetun"  # Use gluetun's network (VPN)
     depends_on:
       - gluetun
+      - init-directories
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
