@@ -1,6 +1,30 @@
 version: '3.8'
 
 services:
+  # Init container to create required directories
+  init-directories:
+    image: alpine:latest
+    container_name: init-directories
+    volumes:
+      - ${MEDIA_ROOT}:/media
+      - ${DOWNLOADS_ROOT}:/downloads
+      - ${CONFIG_ROOT}:/config
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    command: >
+      sh -c "
+        echo 'Creating required directories...'
+        mkdir -p /media/movies /media/tv
+        mkdir -p /downloads/complete /downloads/incomplete
+        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/qbittorrent /config/gluetun
+        chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
+        chmod -R 755 /media /downloads /config 2>/dev/null || true
+        echo 'Directory structure ready!'
+      "
+    user: "0:0"  # Run as root to ensure directory creation works
+    restart: "no"
+
   # VPN Container - All torrent traffic goes through this
   gluetun:
     image: qmcgaw/gluetun:latest
@@ -52,6 +76,8 @@ services:
   jellyfin:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
+    depends_on:
+      - init-directories
     group_add:
       - "992"  # Allow access to video devices for hardware acceleration (render group)
     ports:
@@ -75,6 +101,8 @@ services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
+    depends_on:
+      - init-directories
     ports:
       - "${SONARR_PORT}:8989"
     environment:
@@ -91,6 +119,8 @@ services:
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
+    depends_on:
+      - init-directories
     ports:
       - "${RADARR_PORT}:7878"
     environment:
