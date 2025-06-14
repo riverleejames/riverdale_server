@@ -9,6 +9,7 @@ data/config/radarr/*
 data/config/prowlarr/*
 data/config/transmission/*
 data/config/watchtower/*
+data/config/pihole/*
 
 
 
