@@ -5,12 +5,7 @@
 data/config/gluetun/*
 
 # Application data and configs (contains databases and settings)
-data/config/jellyfin/*
-data/config/sonarr/*
-data/config/radarr/*
-data/config/transmission/*
-data/config/prowlarr/*
-
+data/config/*
 
 # Downloaded content and media
 data/downloads/*

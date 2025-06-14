@@ -16,6 +16,7 @@ This setup provides a full-featured media server with the following capabilities
 
 | Service | Port | Description |
 |---------|------|-------------|
+| **Homarr** | 7575 | Dashboard for all services |
 | **Jellyfin** | 8096 | Media streaming server |
 | **Sonarr** | 8989 | TV show management |
 | **Radarr** | 7878 | Movie management |
@@ -38,6 +39,7 @@ riverdale_server/
 ├── .env
 └── data/
     └── config/          # Application configurations only
+        ├── homarr/
         ├── jellyfin/
         ├── sonarr/
         ├── radarr/
@@ -63,6 +65,12 @@ riverdale_server/
 Copy the `.env.example` to `.env` and configure:
 
 ```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your specific values:
+
+```bash
 # VPN Configuration
 VPN_SERVICE_PROVIDER=nordvpn
 VPN_TYPE=openvpn
@@ -84,6 +92,7 @@ DOWNLOADS_ROOT=/mnt/media-storage/downloads
 MEDIA_ROOT=/mnt/media-storage/media
 
 # Service Ports
+HOMARR_PORT=7575
 JELLYFIN_PORT=8096
 SONARR_PORT=8989
 RADARR_PORT=7878
@@ -93,6 +102,9 @@ PROWLARR_PORT=9696
 # Transmission Authentication
 USERNAME=your_username
 PASSWORD=your_password
+
+# Homarr Configuration
+HOMARR_SECRET_KEY=your_64_character_hex_string
 
 # Watchtower Configuration
 # Optional: Set up notifications (Discord, Slack, email, etc.)
@@ -121,6 +133,7 @@ Ensure you have adequate storage space:
 ## 📱 Access Applications
 
 Once running, access your services at:
+- **Homarr Dashboard**: http://localhost:7575
 - **Jellyfin**: http://localhost:8096
 - **Sonarr**: http://localhost:8989
 - **Radarr**: http://localhost:7878
@@ -168,11 +181,33 @@ To change the update schedule, modify the `WATCHTOWER_SCHEDULE` environment vari
 ## 🎬 Initial Setup Workflow
 
 1. **Start services**: `docker-compose up -d`
-2. **Configure Prowlarr**: Add torrent indexers
-3. **Setup Sonarr**: Configure quality profiles and connect to Prowlarr
-4. **Setup Radarr**: Configure quality profiles and connect to Prowlarr
-5. **Configure Transmission**: Set download directories and preferences
-6. **Setup Jellyfin**: Add media libraries and configure transcoding
+2. **Setup Homarr Dashboard**: Configure your dashboard with service tiles
+3. **Configure Prowlarr**: Add torrent indexers
+4. **Setup Sonarr**: Configure quality profiles and connect to Prowlarr
+5. **Setup Radarr**: Configure quality profiles and connect to Prowlarr
+6. **Configure Transmission**: Set download directories and preferences
+7. **Setup Jellyfin**: Add media libraries and configure transcoding
+
+## 🏠 Homarr Dashboard Configuration
+
+**Homarr** provides a beautiful dashboard to manage all your services in one place. After starting the services:
+
+1. **Access Homarr**: Navigate to http://localhost:7575
+2. **Add Service Tiles**: Use the built-in service discovery or manually add:
+   - **Jellyfin**: `http://jellyfin:8096` (internal) or `http://localhost:8096` (external)
+   - **Sonarr**: `http://sonarr:8989` (internal) or `http://localhost:8989` (external)
+   - **Radarr**: `http://radarr:7878` (internal) or `http://localhost:7878` (external)
+   - **Prowlarr**: `http://prowlarr:9696` (internal) or `http://localhost:9696` (external)
+   - **Transmission**: `http://gluetun:9091` (internal) or `http://localhost:9091` (external)
+
+3. **Configure Integrations**: Enable Docker integration for container monitoring
+4. **Customize Layout**: Arrange tiles, add widgets, and personalize your dashboard
+
+**Pro Tips:**
+- Use internal hostnames (e.g., `jellyfin:8096`) for better performance within the Docker network
+- Enable Docker integration to see container status and resource usage
+- Add custom tiles for other services or bookmarks
+- Use the mobile-friendly interface for remote access
 
 ## 📊 Hardware Acceleration
 
