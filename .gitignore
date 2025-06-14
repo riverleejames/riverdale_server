@@ -10,6 +10,7 @@ data/config/prowlarr/*
 data/config/transmission/*
 data/config/watchtower/*
 data/config/pihole/*
+data/config/dashy/config-backups/*
 
 
 
