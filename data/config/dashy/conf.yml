@@ -106,12 +106,6 @@ sections:
           https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/glances.svg
         url: http://glances.river.local
         id: 1_1633_glances
-      - title: Pi-hole
-        description: DNS server with ad blocking
-        icon: >-
-          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/pi-hole.svg
-        url: http://pihole.river.local
-        id: 2_1633_pihole
       - title: whoami (Test Service)
         description: Simple test service for Traefik
         icon: fas fa-user-circle
