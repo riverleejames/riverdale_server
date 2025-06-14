@@ -1,0 +1,154 @@
+appConfig:
+  title: Riverdale Media Server
+  description: Your personal media server dashboard
+  headerHeight: 48
+  theme: dashy-docs
+  startingView: default
+  defaultOpeningMethod: newtab
+  layout: auto
+  iconSize: medium
+  language: en
+  statusCheck: true
+  statusCheckAllowInsecure: true
+  statusCheckInterval: 30
+  faviconApi: allesedv
+  allowConfigEdit: true
+  enableErrorReporting: false
+  enableServiceWorker: true
+  disableConfiguration: false
+  disableConfigurationForNonAdmin: false
+  enableMultiTasking: true
+  preventWriteToDisk: false
+  preventLocalSave: false
+  hideComponents:
+    hideHeading: false
+    hideNav: true
+    hideSearch: true
+    hideSettings: true
+    hideFooter: true
+  auth:
+    enableGuestAccess: true
+    enableKeycloak: false
+    users:
+      - user: river
+        hash: d1a786322ec609e3f8cc0ca3aee3fe97a1693f91bbfc2bc628d56d9e8ae50d2d
+        type: admin
+    enableOidc: false
+    oidc: {}
+    enableHeaderAuth: false
+    headerAuth:
+      userHeader: REMOTE_USER
+      proxyWhitelist: []
+  routingMode: history
+  widgetsAlwaysUseProxy: false
+  webSearch:
+    disableWebSearch: false
+    searchEngine: duckduckgo
+    openingMethod: newtab
+    searchBangs: {}
+  enableFontAwesome: true
+  enableMaterialDesignIcons: true
+  showSplashScreen: false
+  disableContextMenu: false
+  disableUpdateChecks: false
+  disableSmartSort: false
+sections:
+  - name: Media Services
+    icon: fas fa-film
+    items:
+      - title: Jellyfin
+        description: Media streaming server
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/jellyfin.svg
+        url: http://jellyfin.river.local
+        id: 0_1348_jellyfin
+  - name: Download Management
+    icon: fas fa-download
+    items:
+      - title: Transmission
+        description: BitTorrent client
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/transmission.svg
+        url: http://river.local:9091/transmission/web/
+        target: modal
+        statusCheckAcceptCodes: '401'
+        id: 0_1877_transmission
+      - title: Sonarr
+        description: TV show management
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/sonarr.svg
+        url: http://sonarr.river.local
+        id: 1_1877_sonarr
+      - title: Radarr
+        description: Movie management
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/radarr.svg
+        url: http://radarr.river.local
+        id: 2_1877_radarr
+      - title: Prowlarr
+        description: Indexer manager
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/prowlarr.svg
+        url: http://prowlarr.river.local
+        id: 3_1877_prowlarr
+  - name: System Utilities
+    icon: fas fa-tools
+    items:
+      - title: Traefik Dashboard
+        description: Reverse proxy management
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/traefik.svg
+        url: http://traefik.river.local:8080
+        id: 0_1633_traefikdashboard
+      - title: Glances
+        description: System monitoring
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/glances.svg
+        url: http://glances.river.local
+        id: 1_1633_glances
+      - title: whoami (Test Service)
+        description: Simple test service for Traefik
+        icon: fas fa-user-circle
+        url: http://whoami.river.local
+        id: 2_1633_whoamitestservice
+      - title: Docker Hub
+        description: Container registry
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/docker.svg
+        url: https://hub.docker.com
+        id: 3_1633_dockerhub
+  - name: System Monitoring
+    icon: fas fa-tachometer-alt
+    items:
+      - title: Glances
+        description: System monitoring dashboard
+        icon: >-
+          https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/glances.svg
+        url: http://glances.river.local:61208
+        id: 0_1739_glances
+  - widgets:
+      - type: gl-current-cpu
+        options:
+          hostname: http://glances.river.local
+        id: 0_2288_glcurrentcpu
+      - type: gl-current-mem
+        options:
+          hostname: http://glances.river.local
+        id: 1_2266_glcurrentmem
+      - type: gl-cpu-speedometer
+        options:
+          hostname: http://glances.river.local
+        id: 2_2243_glcpuspeedometer
+      - type: gl-cpu-temp
+        options:
+          hostname: http://glances.river.local
+        id: 3_2312_glcputemp
+    displayData:
+      sortBy: default
+      rows: 1
+      cols: 4
+      collapsed: false
+      hideForGuests: false
+pageInfo:
+  title: Riverdale Server
+  navLinks: []
