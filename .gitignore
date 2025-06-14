@@ -3,9 +3,14 @@
 
 # Gluetun configuration (may contain sensitive VPN data)
 data/config/gluetun/*
+data/config/jellyfin/*
+data/config/sonarr/*
+data/config/radarr/*
+data/config/prowlarr/*
+data/config/transmission/*
+data/config/watchtower/*
 
-# Application data and configs (contains databases and settings)
-data/config/*
+
 
 # Downloaded content and media
 data/downloads/*
