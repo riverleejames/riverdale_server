@@ -21,6 +21,7 @@ This setup provides a full-featured media server with the following capabilities
 | **Radarr** | 7878 | Movie management |
 | **Prowlarr** | 9696 | Torrent indexer management |
 | **Transmission** | 9091 | Torrent client (via VPN) |
+| **Watchtower** | - | Automatic container updates |
 
 ## 🔧 Prerequisites
 
@@ -80,6 +81,12 @@ PROWLARR_PORT=9696
 # Transmission Authentication
 USERNAME=your_username
 PASSWORD=your_password
+
+# Watchtower Configuration
+# Optional: Set up notifications (Discord, Slack, email, etc.)
+# Example for Discord: discord://webhook_id/webhook_token
+# Example for email: smtp://username:password@host:port/?fromAddress=from@example.com&toAddresses=to@example.com
+WATCHTOWER_NOTIFICATION_URL=
 ```
 
 ### Storage Requirements
@@ -114,6 +121,37 @@ Once running, access your services at:
 - **Network Isolation**: Transmission only accessible through VPN container
 - **Firewall Rules**: Outbound traffic restricted to local subnets
 - **User Isolation**: Services run with specified PUID/PGID
+
+## 🔄 Automatic Updates
+
+**Watchtower** is included to automatically keep your containers up to date:
+
+- **Scheduled Updates**: Runs daily at 4:00 AM
+- **Automatic Cleanup**: Removes old images after updates
+- **Notification Support**: Configure Discord, Slack, email, or other notifications
+- **Safe Updates**: Only updates containers that are running
+- **Rollback Capability**: Docker retains previous images for manual rollback if needed
+
+### Watchtower Configuration
+
+To enable notifications, set the `WATCHTOWER_NOTIFICATION_URL` in your `.env` file:
+
+**Discord Webhook:**
+```bash
+WATCHTOWER_NOTIFICATION_URL=discord://webhook_id/webhook_token
+```
+
+**Email Notifications:**
+```bash
+WATCHTOWER_NOTIFICATION_URL=smtp://username:password@host:port/?fromAddress=from@example.com&toAddresses=to@example.com
+```
+
+**Slack Webhook:**
+```bash
+WATCHTOWER_NOTIFICATION_URL=slack://webhook_url
+```
+
+To change the update schedule, modify the `WATCHTOWER_SCHEDULE` environment variable in `docker-compose.yml`. The current schedule `0 0 4 * * *` runs daily at 4:00 AM.
 
 ## 🎬 Initial Setup Workflow
 
