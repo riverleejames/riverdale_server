@@ -117,19 +117,6 @@ sections:
           https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/svg/docker.svg
         url: https://hub.docker.com
         id: 3_1633_dockerhub
-    widgets:
-      - type: gl-current-cpu
-        options:
-          hostname: http://glances.river.local
-      - type: gl-current-mem
-        options:
-          hostname: http://glances.river.local
-      - type: gl-disk-io
-        options:
-          hostname: http://glances.river.local
-      - type: gl-network-traffic
-        options:
-          hostname: http://glances.river.local
 pageInfo:
   title: Riverdale Server
   navLinks: []
