@@ -36,12 +36,24 @@ This setup provides a full-featured media server with the following capabilities
 riverdale_server/
 ├── docker-compose.yml
 ├── .env
-├── data/
-│   ├── config/          # Application configurations
-│   ├── downloads/       # Download staging area
-│   └── media/           # Final media storage
-│       ├── movies/
-│       └── tv/
+└── data/
+    └── config/          # Application configurations only
+        ├── jellyfin/
+        ├── sonarr/
+        ├── radarr/
+        ├── prowlarr/
+        ├── transmission/
+        ├── gluetun/
+        └── watchtower/
+
+/mnt/media-storage/          # Actual storage location (external mount)
+├── downloads/               # Download staging area
+│   ├── complete/
+│   ├── incomplete/
+│   └── watch/
+└── media/                   # Final media storage
+    ├── movies/
+    └── tv/
 ```
 
 ## ⚙️ Configuration
