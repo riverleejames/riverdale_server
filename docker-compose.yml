@@ -19,7 +19,7 @@ services:
         mkdir -p /downloads/complete/movies /downloads/complete/tv /downloads/complete/tv-sonarr /downloads/complete/radarr
         mkdir -p /downloads/incomplete
         mkdir -p /downloads/watch
-        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik /config/pihole/etc-pihole
+        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
         echo 'Directory structure ready!'
@@ -253,41 +253,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.river.local`)"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-
-  # Pi-hole - DNS server with ad blocking
-  pihole:
-    image: pihole/pihole:latest
-    container_name: pihole
-    depends_on:
-      - init-directories
-    ports:
-      - "53:53/tcp"    # DNS TCP (using port 8553 to avoid conflicts)
-      - "53:53/udp"    # DNS UDP (using port 8553 to avoid conflicts)
-      - "67:67/udp"      # DHCP (optional)
-      - "8053:80/tcp"    # Pi-hole web interface (avoiding port 80 conflict with Traefik)
-      - "8443:443/tcp"   # Pi-hole HTTPS interface
-    environment:
-      - TZ=${TZ}
-      # Pi-hole v6 format for web password
-      - FTLCONF_webserver_api_password=${PIHOLE_PASSWORD:-admin}
-      # Pi-hole v6 format for DNS listening mode
-      - FTLCONF_dns_listeningMode=all
-      # Optional: Set upstream DNS servers (Pi-hole v6 format)
-      # - FTLCONF_dns_upstreams=1.1.1.1,1.0.0.1
-    volumes:
-      - ${CONFIG_ROOT}/pihole/etc-pihole:/etc/pihole
-      # Note: etc-dnsmasq.d volume commented out as per v6 documentation
-      # Uncomment only if migrating from v5 or have custom dnsmasq configs
-      # - ${CONFIG_ROOT}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
-    cap_add:
-      - NET_ADMIN      # Required for DHCP and network operations
-      - SYS_TIME       # Required for NTP time synchronization
-      - SYS_NICE       # Optional, gives Pi-hole more processing priority
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pihole.rule=Host(`pihole.river.local`)"
-      - "traefik.http.services.pihole.loadbalancer.server.port=80"
 
   # whoami - Simple service for testing Traefik
   whoami:
