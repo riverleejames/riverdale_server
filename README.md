@@ -16,12 +16,15 @@ This setup provides a full-featured media server with the following capabilities
 
 | Service | Port | Description |
 |---------|------|-------------|
-| **Homarr** | 7575 | Dashboard for all services |
+| **Dashy** | 4000 | Dashboard for all services |
 | **Jellyfin** | 8096 | Media streaming server |
 | **Sonarr** | 8989 | TV show management |
 | **Radarr** | 7878 | Movie management |
 | **Prowlarr** | 9696 | Torrent indexer management |
 | **Transmission** | 9091 | Torrent client (via VPN) |
+| **Pi-hole** | 8053 | DNS server with ad blocking |
+| **Glances** | 61208 | System monitoring |
+| **Traefik** | 8080 | Reverse proxy dashboard |
 | **Watchtower** | - | Automatic container updates |
 
 ## 🔧 Prerequisites
@@ -133,12 +136,15 @@ Ensure you have adequate storage space:
 ## 📱 Access Applications
 
 Once running, access your services at:
-- **Homarr Dashboard**: http://localhost:7575
+- **Dashy Dashboard**: http://localhost:4000
 - **Jellyfin**: http://localhost:8096
 - **Sonarr**: http://localhost:8989
 - **Radarr**: http://localhost:7878
 - **Prowlarr**: http://localhost:9696
 - **Transmission**: http://localhost:9091
+- **Pi-hole**: http://localhost:8053
+- **Glances**: http://localhost:61208
+- **Traefik Dashboard**: http://localhost:8080
 
 ## 🔒 Security Features
 
@@ -209,7 +215,61 @@ To change the update schedule, modify the `WATCHTOWER_SCHEDULE` environment vari
 - Add custom tiles for other services or bookmarks
 - Use the mobile-friendly interface for remote access
 
-## 📊 Hardware Acceleration
+## �️ Pi-hole DNS Configuration
+
+**Pi-hole** provides network-wide ad blocking and DNS filtering for all devices on your local network.
+
+### Initial Setup
+
+1. **Access Pi-hole**: Navigate to http://localhost:8053 or http://pihole.river.local
+2. **Login**: Use the password set in your `.env` file (`PIHOLE_PASSWORD`)
+3. **Configure Blocklists**: Pi-hole comes with default blocklists, but you can add more:
+   - Go to Group Management > Adlists
+   - Add popular blocklists like:
+     - `https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts`
+     - `https://someonewhocares.org/hosts/zero/hosts`
+     - `https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt`
+
+4. **Update Gravity**: After adding blocklists, run Tools > Update Gravity
+
+### Network Configuration
+
+To use Pi-hole as your network DNS server:
+
+**Option 1: Router Configuration (Recommended)**
+- Access your router's admin interface
+- Change the primary DNS server to your Pi-hole server IP
+- Set secondary DNS to `1.1.1.1` or `8.8.8.8` as backup
+
+**Option 2: Device-Specific Configuration**
+- Manually set DNS on each device to your Pi-hole server IP
+- Use `1.1.1.1` or `8.8.8.8` as secondary DNS
+
+**Finding Your Pi-hole IP:**
+```bash
+docker exec pihole hostname -i
+```
+
+### Pi-hole Features
+
+- **Query Log**: Monitor all DNS requests in real-time
+- **Whitelist/Blacklist**: Manually allow or block specific domains
+- **Local DNS Records**: Create custom local domain mappings
+- **Statistics**: View detailed blocking statistics and top clients
+- **DHCP Server**: Optionally replace your router's DHCP (advanced users)
+
+### Custom Local Domains
+
+You can create local DNS entries in Pi-hole:
+1. Go to Local DNS > DNS Records
+2. Add entries like:
+   - `jellyfin.river.local` → `192.168.1.100`
+   - `sonarr.river.local` → `192.168.1.100`
+   - `radarr.river.local` → `192.168.1.100`
+
+This allows you to access services using friendly domain names from any device on your network.
+
+## �📊 Hardware Acceleration
 
 Jellyfin is configured for Intel QuickSync hardware acceleration:
 - Requires Intel CPU with integrated graphics
@@ -252,6 +312,13 @@ Important directories to backup:
 - Verify mount points exist and are accessible
 - Check disk space: `df -h`
 - Ensure proper permissions on storage directories
+
+### Pi-hole Issues
+- Check Pi-hole container status: `docker-compose ps pihole`
+- Verify DNS resolution: `nslookup google.com localhost`
+- Check Pi-hole logs: `docker-compose logs pihole`
+- Test blocking: `nslookup doubleclick.net localhost` (should be blocked)
+- Ensure port 53 is not in use by another service: `sudo netstat -tulpn | grep :53`
 
 ## 📝 Notes
 
