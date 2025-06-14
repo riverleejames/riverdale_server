@@ -104,6 +104,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.river.local`)"
+      - "traefik.http.routers.jellyfin.entrypoints=web"
       - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
 
   # Sonarr - TV Show management
@@ -126,6 +127,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sonarr.rule=Host(`sonarr.river.local`)"
+      - "traefik.http.routers.sonarr.entrypoints=web"
       - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
 
   # Radarr - Movie management
@@ -148,6 +150,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.radarr.rule=Host(`radarr.river.local`)"
+      - "traefik.http.routers.radarr.entrypoints=web"
       - "traefik.http.services.radarr.loadbalancer.server.port=7878"
 
   # Prowlarr - Indexer management
@@ -166,6 +169,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.river.local`)"
+      - "traefik.http.routers.prowlarr.entrypoints=web"
       - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
 
   # Watchtower - Automatic container updates
@@ -205,6 +209,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashy.rule=Host(`dashy.river.local`)"
+      - "traefik.http.routers.dashy.entrypoints=web"
       - "traefik.http.services.dashy.loadbalancer.server.port=8080"
 
   # Glances - System monitoring
@@ -227,6 +232,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.glances.rule=Host(`glances.river.local`)"
+      - "traefik.http.routers.glances.entrypoints=web"
       - "traefik.http.services.glances.loadbalancer.server.port=61208"
 
   # Traefik - Reverse Proxy
@@ -234,6 +240,7 @@ services:
     image: traefik:latest
     container_name: traefik
     ports:
+      - "80:80"      # HTTP traffic for services
       - "8080:8080"  # Traefik dashboard
     environment:
       - TZ=${TZ}
@@ -251,6 +258,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.river.local`)"
+      - "traefik.http.routers.traefik.entrypoints=web"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
   # whoami - Simple service for testing Traefik
@@ -261,6 +269,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`whoami.river.local`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.services.whoami.loadbalancer.server.port=80"
 
 networks:
