@@ -234,7 +234,6 @@ services:
     image: traefik:latest
     container_name: traefik
     ports:
-      - "80:80"  # Standard HTTP port
       - "8080:8080"  # Traefik dashboard
     environment:
       - TZ=${TZ}
