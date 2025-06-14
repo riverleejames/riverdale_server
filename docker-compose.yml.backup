@@ -5,8 +5,25 @@ services:
   init-directories:
     image: alpine:latest
     container_name: init-directories
+    volumes:  # Homarr - Dashboard for all services
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    depends_on:
+      - init-directories
+    ports:
+      - "${HOMARR_PORT}:7575"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - SECRET_ENCRYPTION_KEY=${HOMARR_SECRET_KEY}
     volumes:
-      - ${MEDIA_ROOT}:/media
+      - ${CONFIG_ROOT}/homarr:/appdata
+      - /var/run/docker.sock:/var/run/docker.sock  # For Docker integration
+    group_add:
+      - "109"  # Docker group GID for socket access
+    restart: unless-stoppedROOT}:/media
       - ${DOWNLOADS_ROOT}:/downloads
       - ${CONFIG_ROOT}:/config
     environment:
@@ -19,7 +36,7 @@ services:
         mkdir -p /downloads/complete/movies /downloads/complete/tv /downloads/complete/tv-sonarr /downloads/complete/radarr
         mkdir -p /downloads/incomplete
         mkdir -p /downloads/watch
-        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy
+        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/homarr
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
         echo 'Directory structure ready!'
@@ -168,23 +185,22 @@ services:
       - ${CONFIG_ROOT}/watchtower:/config
     restart: unless-stopped
 
-  # Dashy - Dashboard for all services
-  dashy:
-    image: lissy93/dashy:latest
-    container_name: dashy
+  # Homarr - Dashboard for all services
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
     depends_on:
       - init-directories
     ports:
-      - "${DASHY_PORT}:8080"
+      - "${HOMARR_PORT}:7575"
     environment:
       - PUID=${PUID}
-      - PGID=${PGID}
+      - PGID=109  # Use docker group ID for Docker socket access
       - TZ=${TZ}
-      - NODE_ENV=production
-      - UID=${PUID}
-      - GID=${PGID}
+      - SECRET_ENCRYPTION_KEY=${HOMARR_SECRET_KEY}
     volumes:
-      - ${CONFIG_ROOT}/dashy:/app/user-data
+      - ${CONFIG_ROOT}/homarr:/appdata
+      - /var/run/docker.sock:/var/run/docker.sock  # For Docker integration
     restart: unless-stopped
 
 networks:
