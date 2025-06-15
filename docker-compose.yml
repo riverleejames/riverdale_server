@@ -91,6 +91,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - JELLYFIN_PublishedServerUrl=http://jellyfin.river.local  # For discovery
     volumes:
       - ${CONFIG_ROOT}/jellyfin:/config
       - ${MEDIA_ROOT}:/media

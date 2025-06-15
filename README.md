@@ -1,64 +1,130 @@
 # Riverdale Media Server
 
-A complete media server stack with automated downloading, VPN protection, and streaming capabilities using Docker Compose.
+A complete media server stack with automated downloading, VPN protection, streaming capabilities, and network-wide access using Docker Compose, Traefik reverse proxy, and Pi-hole DNS.
 
 ## 🎯 Overview
 
 This setup provides a full-featured media server with the following capabilities:
-- **Secure torrenting** through VPN (NordVPN)
+
+- **Secure torrenting** through VPN (Gluetun with multiple VPN providers)
 - **Automated TV show management** with Sonarr
 - **Automated movie management** with Radarr
 - **Torrent indexer management** with Prowlarr
-- **Media streaming** with Jellyfin
-- **Torrent client** with Transmission
+- **Media streaming** with Jellyfin (with hardware acceleration)
+- **Torrent client** with Transmission (VPN-protected)
+- **Reverse proxy** with Traefik for clean domain access
+- **Network-wide DNS** with Pi-hole for device-wide domain resolution
+- **System monitoring** with Glances
+- **Service dashboard** with Dashy
+- **Automatic updates** with Watchtower
 
-## 📋 Services
+## 🌐 Network Access
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **Dashy** | 4000 | Dashboard for all services |
-| **Jellyfin** | 8096 | Media streaming server |
-| **Sonarr** | 8989 | TV show management |
-| **Radarr** | 7878 | Movie management |
-| **Prowlarr** | 9696 | Torrent indexer management |
-| **Transmission** | 9091 | Torrent client (via VPN) |
-| **Pi-hole** | 8053 | DNS server with ad blocking |
-| **Glances** | 61208 | System monitoring |
-| **Traefik** | 8080 | Reverse proxy dashboard |
-| **Watchtower** | - | Automatic container updates |
+All services are accessible via clean domain names through Traefik reverse proxy and Pi-hole DNS:
+
+### Via Traefik Reverse Proxy (Port 80)
+
+| Service | Domain | Description |
+|---------|--------|-------------|
+| **Jellyfin** | `jellyfin.river.local` | Media streaming server |
+| **Sonarr** | `sonarr.river.local` | TV show management |
+| **Radarr** | `radarr.river.local` | Movie management |
+| **Prowlarr** | `prowlarr.river.local` | Torrent indexer management |
+| **Glances** | `glances.river.local` | System monitoring |
+| **Dashy** | `dashy.river.local` | Service dashboard |
+| **Traefik** | `traefik.river.local` | Reverse proxy dashboard |
+| **Whoami** | `whoami.river.local` | Test service |
+
+### Direct Port Access
+
+| Service | URL | Port | Notes |
+|---------|-----|------|-------|
+| **Transmission** | `transmission.river.local:9091/transmission/web/` | 9091 | VPN-protected, requires port access |
+| **Watchtower** | - | - | Background service, no web interface |
+
+## 📋 Service Details
+
+### Core Media Services
+
+- **Jellyfin** (8096): Media streaming with Intel QuickSync hardware acceleration
+- **Sonarr** (8989): Automated TV show downloading and management
+- **Radarr** (7878): Automated movie downloading and management
+- **Prowlarr** (9696): Torrent indexer management and integration
+
+### Download & VPN
+
+- **Gluetun**: VPN container providing secure tunnel for Transmission
+- **Transmission** (9091): Torrent client running through VPN protection
+
+### Infrastructure
+
+- **Traefik** (80/8080): Reverse proxy for clean domain access
+- **Dashy** (4000→8080): Customizable dashboard for all services
+- **Glances** (61208): Real-time system monitoring
+- **Watchtower**: Automatic container updates (4 AM daily)
 
 ## 🔧 Prerequisites
 
 - Docker and Docker Compose installed
-- NordVPN account credentials
+- VPN account credentials (supports multiple providers via Gluetun)
+- **Pi-hole running on your network** (can be on a separate machine) for DNS resolution
 - Sufficient storage space for media and downloads
-- Hardware with Intel QuickSync support (for Jellyfin transcoding)
+- Intel CPU with QuickSync support (optional, for Jellyfin hardware transcoding)
 
 ## 📁 Directory Structure
 
 ```
 riverdale_server/
-├── docker-compose.yml
-├── .env
+├── docker-compose.yml           # Main service configuration
+├── .env                        # Environment variables (create from .env.example)
+├── README.md                   # This documentation
+├── SERVICE_ACCESS_GUIDE.md     # Quick service access reference
+├── pihole-dns-setup.sh         # Pi-hole DNS configuration script (run on Pi-hole machine)
 └── data/
-    └── config/          # Application configurations only
-        ├── homarr/
+    └── config/                 # Application configurations
+        ├── dashy/
         ├── jellyfin/
         ├── sonarr/
         ├── radarr/
         ├── prowlarr/
         ├── transmission/
         ├── gluetun/
+        ├── traefik/
         └── watchtower/
 
-/mnt/media-storage/          # Actual storage location (external mount)
-├── downloads/               # Download staging area
+External Storage Locations:
+├── downloads/                  # Download staging area
 │   ├── complete/
 │   ├── incomplete/
 │   └── watch/
-└── media/                   # Final media storage
+└── media/                      # Final media storage
     ├── movies/
     └── tv/
+```
+
+## 🌐 Network Architecture
+
+```
+Internet
+    ↓
+Pi-hole DNS Server (separate machine)
+(*.river.local → 192.168.1.37)
+    ↓
+Your Network Devices
+    ↓
+Traefik Reverse Proxy (Port 80) on 192.168.1.37
+    ↓
+┌─────────────────────────────────────────┐
+│         Docker Network                  │
+│        (riverdale_network)              │
+│                                         │
+│  ┌─────────────┐  ┌─────────────────┐   │
+│  │   Gluetun   │  │   Other Services │   │
+│  │    (VPN)    │  │  (Jellyfin,     │   │
+│  │      ├──────┼──│   Sonarr, etc.) │   │
+│  │ Transmission│  │                 │   │
+│  └─────────────┘  └─────────────────┘   │
+└─────────────────────────────────────────┘
 ```
 
 ## ⚙️ Configuration
@@ -74,12 +140,12 @@ cp .env.example .env
 Then edit `.env` with your specific values:
 
 ```bash
-# VPN Configuration
-VPN_SERVICE_PROVIDER=nordvpn
-VPN_TYPE=openvpn
-OPENVPN_USER=your_nordvpn_username
-OPENVPN_PASSWORD=your_nordvpn_password
-SERVER_COUNTRIES=Ireland
+# VPN Configuration (Gluetun supports multiple providers)
+VPN_SERVICE_PROVIDER=nordvpn  # or surfshark, expressvpn, cyberghost, etc.
+VPN_TYPE=openvpn              # or wireguard
+OPENVPN_USER=your_vpn_username
+OPENVPN_PASSWORD=your_vpn_password
+SERVER_COUNTRIES=Ireland      # or your preferred server location
 
 # User/Group IDs (run 'id' command to get your values)
 PUID=1000
@@ -88,37 +154,83 @@ PGID=1000
 # Timezone
 TZ=Europe/Dublin
 
-# Storage Paths
-DATA_ROOT=/home/river/riverdale_server/data
-CONFIG_ROOT=/home/river/riverdale_server/data/config
-DOWNLOADS_ROOT=/mnt/media-storage/downloads
-MEDIA_ROOT=/mnt/media-storage/media
+# Storage Paths - Adjust these to your setup
+CONFIG_ROOT=./data/config
+DOWNLOADS_ROOT=/path/to/downloads
+MEDIA_ROOT=/path/to/media
 
 # Service Ports
-HOMARR_PORT=7575
 JELLYFIN_PORT=8096
 SONARR_PORT=8989
 RADARR_PORT=7878
 TRANSMISSION_PORT=9091
 PROWLARR_PORT=9696
+DASHY_PORT=4000
+GLANCES_PORT=61208
 
 # Transmission Authentication
 USERNAME=your_username
 PASSWORD=your_password
 
-# Homarr Configuration
-HOMARR_SECRET_KEY=your_64_character_hex_string
-
 # Watchtower Configuration
 # Optional: Set up notifications (Discord, Slack, email, etc.)
-# Example for Discord: discord://webhook_id/webhook_token
-# Example for email: smtp://username:password@host:port/?fromAddress=from@example.com&toAddresses=to@example.com
 WATCHTOWER_NOTIFICATION_URL=
+```
+
+### Pi-hole DNS Configuration
+
+**Important**: Pi-hole should be running on your network and handling DHCP/DNS for all devices. Since Pi-hole is hosted on a separate machine, you'll need to configure DNS records on that Pi-hole server.
+
+#### Option 1: Automated Setup (Recommended)
+
+1. **Transfer the setup script** to your Pi-hole server:
+
+   ```bash
+   scp pihole-dns-setup.sh user@pihole-server-ip:/home/user/
+   ```
+
+2. **Run the script on your Pi-hole server**:
+
+   ```bash
+   ssh user@pihole-server-ip
+   sudo bash pihole-dns-setup.sh
+   ```
+
+#### Option 2: Manual Configuration
+
+1. **Access Pi-hole Admin Interface** on your Pi-hole server
+2. **Navigate to**: Local DNS → DNS Records
+3. **Add DNS records** pointing to your Riverdale server (replace `192.168.1.37` with your server's IP):
+
+   | Domain | IP Address | Service |
+   |--------|------------|---------|
+   | `jellyfin.river.local` | `192.168.1.37` | Media streaming |
+   | `sonarr.river.local` | `192.168.1.37` | TV show management |
+   | `radarr.river.local` | `192.168.1.37` | Movie management |
+   | `prowlarr.river.local` | `192.168.1.37` | Indexer management |
+   | `glances.river.local` | `192.168.1.37` | System monitoring |
+   | `dashy.river.local` | `192.168.1.37` | Service dashboard |
+   | `traefik.river.local` | `192.168.1.37` | Reverse proxy dashboard |
+   | `whoami.river.local` | `192.168.1.37` | Test service |
+   | `transmission.river.local` | `192.168.1.37` | Download client |
+
+4. **Verify Pi-hole is being used** as DNS server by your devices:
+   - Check router DHCP settings point to Pi-hole
+   - Or manually configure devices to use Pi-hole IP as DNS server
+
+#### Verification
+
+Test DNS resolution from any device on your network:
+
+```bash
+nslookup jellyfin.river.local
+# Should return 192.168.1.37
 ```
 
 ### Storage Requirements
 
 Ensure you have adequate storage space:
+
 - **Downloads**: Temporary storage for torrents (can be large)
 - **Media**: Permanent storage for your media library
 - **Config**: Application settings and databases (minimal space)
@@ -126,36 +238,68 @@ Ensure you have adequate storage space:
 ## 🚀 Getting Started
 
 1. **Clone or download** this configuration to your server
-2. **Configure environment variables** in `.env`
-3. **Ensure storage paths exist** and have proper permissions
-4. **Start the stack**:
+2. **Create environment file**: Copy `.env.example` to `.env` and configure your specific values
+3. **Configure storage paths** in `.env` and ensure directories exist with proper permissions
+4. **Configure Pi-hole DNS** on your Pi-hole server using the included script or manual setup
+5. **Start the stack**:
+
    ```bash
    docker-compose up -d
    ```
 
+6. **Verify services** are running:
+
+   ```bash
+   docker-compose ps
+   ```
+
+7. **Test network access**: Try accessing `http://dashy.river.local` from any device on your network
+
 ## 📱 Access Applications
 
-Once running, access your services at:
-- **Dashy Dashboard**: http://localhost:4000
-- **Jellyfin**: http://localhost:8096
-- **Sonarr**: http://localhost:8989
-- **Radarr**: http://localhost:7878
-- **Prowlarr**: http://localhost:9696
-- **Transmission**: http://localhost:9091
-- **Pi-hole**: http://localhost:8053
-- **Glances**: http://localhost:61208
-- **Traefik Dashboard**: http://localhost:8080
+### Clean Domain Access (via Traefik + Pi-hole)
+
+Once Pi-hole DNS is configured, access services using clean URLs:
+
+- **Dashy Dashboard**: <http://dashy.river.local>
+- **Jellyfin**: <http://jellyfin.river.local>
+- **Sonarr**: <http://sonarr.river.local>
+- **Radarr**: <http://radarr.river.local>
+- **Prowlarr**: <http://prowlarr.river.local>
+- **Glances**: <http://glances.river.local>
+- **Traefik Dashboard**: <http://traefik.river.local>
+- **Test Service**: <http://whoami.river.local>
+
+### Direct Port Access (fallback)
+
+- **Dashy Dashboard**: http://[server-ip]:4000
+- **Jellyfin**: http://[server-ip]:8096
+- **Sonarr**: http://[server-ip]:8989
+- **Radarr**: http://[server-ip]:7878
+- **Prowlarr**: http://[server-ip]:9696
+- **Transmission**: http://[server-ip]:9091/transmission/web/
+- **Glances**: http://[server-ip]:61208
+- **Traefik Dashboard**: http://[server-ip]:8080
+
+### Special Case: Transmission
+
+Due to VPN network isolation, Transmission requires port-specific access:
+
+- **With domain**: <http://transmission.river.local:9091/transmission/web/>
+- **Direct IP**: http://[server-ip]:9091/transmission/web/
 
 ## 🔒 Security Features
 
-- **VPN Protection**: All torrent traffic routed through NordVPN
-- **Network Isolation**: Transmission only accessible through VPN container
-- **Firewall Rules**: Outbound traffic restricted to local subnets
-- **User Isolation**: Services run with specified PUID/PGID
+- **VPN Protection**: All torrent traffic routed through Gluetun VPN container
+- **Network Isolation**: Transmission isolated within VPN network stack
+- **Firewall Rules**: Outbound traffic restricted to local subnets and VPN
+- **User Isolation**: Services run with specified PUID/PGID for security
+- **Reverse Proxy**: Traefik handles SSL termination and routing (HTTP currently, HTTPS can be added)
+- **DNS Security**: Pi-hole provides ad-blocking and DNS filtering network-wide
 
 ## 🔄 Automatic Updates
 
-**Watchtower** is included to automatically keep your containers up to date:
+**Watchtower** keeps your containers automatically updated:
 
 - **Scheduled Updates**: Runs daily at 4:00 AM
 - **Automatic Cleanup**: Removes old images after updates
@@ -168,169 +312,336 @@ Once running, access your services at:
 To enable notifications, set the `WATCHTOWER_NOTIFICATION_URL` in your `.env` file:
 
 **Discord Webhook:**
+
 ```bash
 WATCHTOWER_NOTIFICATION_URL=discord://webhook_id/webhook_token
 ```
 
 **Email Notifications:**
+
 ```bash
 WATCHTOWER_NOTIFICATION_URL=smtp://username:password@host:port/?fromAddress=from@example.com&toAddresses=to@example.com
 ```
 
 **Slack Webhook:**
+
 ```bash
 WATCHTOWER_NOTIFICATION_URL=slack://webhook_url
 ```
 
-To change the update schedule, modify the `WATCHTOWER_SCHEDULE` environment variable in `docker-compose.yml`. The current schedule `0 0 4 * * *` runs daily at 4:00 AM.
-
 ## 🎬 Initial Setup Workflow
 
 1. **Start services**: `docker-compose up -d`
-2. **Setup Homarr Dashboard**: Configure your dashboard with service tiles
-3. **Configure Prowlarr**: Add torrent indexers
-4. **Setup Sonarr**: Configure quality profiles and connect to Prowlarr
-5. **Setup Radarr**: Configure quality profiles and connect to Prowlarr
-6. **Configure Transmission**: Set download directories and preferences
-7. **Setup Jellyfin**: Add media libraries and configure transcoding
+2. **Configure Pi-hole DNS**: Run `pihole-dns-setup.sh` or manually add DNS records
+3. **Setup Dashy Dashboard**: Access <http://dashy.river.local> and configure service tiles
+4. **Configure Prowlarr**: Add torrent indexers at <http://prowlarr.river.local>
+5. **Setup Sonarr**: Configure quality profiles and connect to Prowlarr at <http://sonarr.river.local>
+6. **Setup Radarr**: Configure quality profiles and connect to Prowlarr at <http://radarr.river.local>
+7. **Configure Transmission**: Set download directories and preferences at <http://transmission.river.local:9091/transmission/web/>
+8. **Setup Jellyfin**: Add media libraries and configure transcoding at <http://jellyfin.river.local>
 
-## 🏠 Homarr Dashboard Configuration
+## �️ Dashy Dashboard Configuration
 
-**Homarr** provides a beautiful dashboard to manage all your services in one place. After starting the services:
+**Dashy** provides a beautiful, customizable dashboard to manage all your services:
 
-1. **Access Homarr**: Navigate to http://localhost:7575
-2. **Add Service Tiles**: Use the built-in service discovery or manually add:
-   - **Jellyfin**: `http://jellyfin:8096` (internal) or `http://localhost:8096` (external)
-   - **Sonarr**: `http://sonarr:8989` (internal) or `http://localhost:8989` (external)
-   - **Radarr**: `http://radarr:7878` (internal) or `http://localhost:7878` (external)
-   - **Prowlarr**: `http://prowlarr:9696` (internal) or `http://localhost:9696` (external)
-   - **Transmission**: `http://gluetun:9091` (internal) or `http://localhost:9091` (external)
+### Adding Service Tiles
 
-3. **Configure Integrations**: Enable Docker integration for container monitoring
-4. **Customize Layout**: Arrange tiles, add widgets, and personalize your dashboard
+1. **Access Dashy**: Navigate to <http://dashy.river.local>
+2. **Enter Edit Mode**: Click the edit icon (pencil) in the top right
+3. **Add Services**: Use these configurations for your tiles:
 
-**Pro Tips:**
-- Use internal hostnames (e.g., `jellyfin:8096`) for better performance within the Docker network
-- Enable Docker integration to see container status and resource usage
-- Add custom tiles for other services or bookmarks
-- Use the mobile-friendly interface for remote access
-
-## �️ Pi-hole DNS Configuration
-
-**Pi-hole** provides network-wide ad blocking and DNS filtering for all devices on your local network.
-
-### Initial Setup
-
-1. **Access Pi-hole**: Navigate to http://localhost:8053 or http://pihole.river.local
-2. **Login**: Use the password set in your `.env` file (`PIHOLE_PASSWORD`)
-3. **Configure Blocklists**: Pi-hole comes with default blocklists, but you can add more:
-   - Go to Group Management > Adlists
-   - Add popular blocklists like:
-     - `https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts`
-     - `https://someonewhocares.org/hosts/zero/hosts`
-     - `https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt`
-
-4. **Update Gravity**: After adding blocklists, run Tools > Update Gravity
-
-### Network Configuration
-
-To use Pi-hole as your network DNS server:
-
-**Option 1: Router Configuration (Recommended)**
-- Access your router's admin interface
-- Change the primary DNS server to your Pi-hole server IP
-- Set secondary DNS to `1.1.1.1` or `8.8.8.8` as backup
-
-**Option 2: Device-Specific Configuration**
-- Manually set DNS on each device to your Pi-hole server IP
-- Use `1.1.1.1` or `8.8.8.8` as secondary DNS
-
-**Finding Your Pi-hole IP:**
-```bash
-docker exec pihole hostname -i
+```yaml
+sections:
+  - name: Media Services
+    items:
+      - title: Jellyfin
+        url: http://jellyfin.river.local
+        icon: hl-jellyfin
+      - title: Sonarr
+        url: http://sonarr.river.local
+        icon: hl-sonarr
+      - title: Radarr
+        url: http://radarr.river.local
+        icon: hl-radarr
+      - title: Prowlarr
+        url: http://prowlarr.river.local
+        icon: hl-prowlarr
+        
+  - name: Download & VPN
+    items:
+      - title: Transmission
+        url: http://transmission.river.local:9091/transmission/web/
+        icon: hl-transmission
+        
+  - name: System
+    items:
+      - title: Glances
+        url: http://glances.river.local
+        icon: hl-glances
+      - title: Traefik
+        url: http://traefik.river.local
+        icon: hl-traefik
 ```
 
-### Pi-hole Features
+### Advanced Features
 
-- **Query Log**: Monitor all DNS requests in real-time
-- **Whitelist/Blacklist**: Manually allow or block specific domains
-- **Local DNS Records**: Create custom local domain mappings
-- **Statistics**: View detailed blocking statistics and top clients
-- **DHCP Server**: Optionally replace your router's DHCP (advanced users)
+- **Status Indicators**: Enable health checks for real-time service status
+- **Custom Widgets**: Add system info, weather, or other widgets
+- **Themes**: Choose from multiple built-in themes or create custom ones
+- **Mobile Support**: Responsive design works great on mobile devices
 
-### Custom Local Domains
-
-You can create local DNS entries in Pi-hole:
-1. Go to Local DNS > DNS Records
-2. Add entries like:
-   - `jellyfin.river.local` → `192.168.1.100`
-   - `sonarr.river.local` → `192.168.1.100`
-   - `radarr.river.local` → `192.168.1.100`
-
-This allows you to access services using friendly domain names from any device on your network.
-
-## �📊 Hardware Acceleration
+## 🎥 Hardware Acceleration
 
 Jellyfin is configured for Intel QuickSync hardware acceleration:
-- Requires Intel CPU with integrated graphics
+
+- Requires Intel CPU with integrated graphics (6th gen or newer recommended)
 - Uses `/dev/dri/renderD128` and `/dev/dri/card1` devices
-- Significantly improves transcoding performance
+- Significantly improves transcoding performance and reduces CPU usage
+- Supports hardware-accelerated H.264 and H.265 encoding/decoding
+
+To verify hardware acceleration is working:
+
+1. Access Jellyfin at <http://jellyfin.river.local>
+2. Go to Dashboard → Playback → Transcoding
+3. Enable "Intel QuickSync Video" options
+4. Monitor transcoding performance in Dashboard → Activity
 
 ## 🔧 Maintenance
 
-### Logs
-View service logs:
-```bash
-docker-compose logs [service_name]
-```
+### Service Management
 
-### Updates
-Update all services:
 ```bash
-docker-compose pull
+# View all service status
+docker-compose ps
+
+# View service logs
+docker-compose logs [service_name]
+docker-compose logs jellyfin
+docker-compose logs transmission
+
+# Restart specific service
+docker-compose restart [service_name]
+
+# Stop all services
+docker-compose down
+
+# Start all services
 docker-compose up -d
 ```
 
-### Backup
-Important directories to backup:
+### Updates
+
+```bash
+# Pull latest images
+docker-compose pull
+
+# Recreate containers with new images
+docker-compose up -d
+
+# Or let Watchtower handle updates automatically
+```
+
+### Backup Important Data
+
+Essential directories to backup regularly:
+
 - `data/config/` - Application configurations and databases
-- `.env` - Environment variables
+- `.env` - Environment variables and credentials
+- `docker-compose.yml` - Service configuration
+- Media library (if not using external storage)
+
+### Network Testing
+
+```bash
+# Test DNS resolution
+nslookup jellyfin.river.local
+
+# Test service connectivity
+curl -I http://jellyfin.river.local
+curl -I http://transmission.river.local:9091/transmission/web/
+
+# Check Traefik routing
+curl -I http://traefik.river.local
+```
 
 ## 🚨 Troubleshooting
 
 ### VPN Issues
-- Check NordVPN credentials in `.env`
-- Verify VPN container health: `docker-compose ps gluetun`
-- Check logs: `docker-compose logs gluetun`
+
+```bash
+# Check VPN container health
+docker-compose ps gluetun
+
+# View VPN logs
+docker-compose logs gluetun
+
+# Test VPN connectivity
+docker exec gluetun wget -qO- ifconfig.me
+```
+
+**Common fixes:**
+
+- Verify VPN credentials in `.env`
+- Check VPN server location/availability
+- Ensure VPN service provider is correctly specified
+
+### Transmission Access Issues
+
+```bash
+# Check if Transmission is accessible
+curl -I http://localhost:9091/transmission/web/
+
+# Verify port mapping
+docker port gluetun
+```
+
+**Common fixes:**
+
+- Ensure Gluetun container is healthy
+- Check `TRANSMISSION_PORT` environment variable
+- Access via: `http://transmission.river.local:9091/transmission/web/`
+
+### Traefik Routing Issues
+
+```bash
+# Check Traefik dashboard for registered services
+curl http://traefik.river.local/api/http/routers
+
+# View Traefik logs
+docker-compose logs traefik
+```
+
+**Common fixes:**
+
+- Ensure Pi-hole DNS is configured and working
+- Verify domain resolution: `nslookup jellyfin.river.local`
+- Check container labels in docker-compose.yml
+
+### DNS Resolution Problems
+
+```bash
+# Test Pi-hole DNS from client device
+nslookup jellyfin.river.local
+
+# Test Pi-hole DNS directly (replace with your Pi-hole IP)
+nslookup jellyfin.river.local 192.168.1.100
+
+# Check if devices are using Pi-hole as DNS
+cat /etc/resolv.conf  # Linux
+# or check network settings on Windows/Mac
+```
+
+**Common fixes:**
+
+- Transfer and run `pihole-dns-setup.sh` script on Pi-hole server
+- Ensure Pi-hole server is accessible from your network
+- Configure router DHCP to use Pi-hole as DNS server
+- Manually set DNS on devices to Pi-hole IP address
+- Verify Pi-hole is handling both DNS and DHCP properly
 
 ### Permission Issues
+
+```bash
+# Check directory ownership
+ls -la data/config/
+
+# Fix ownership (replace 1000:1000 with your PUID:PGID)
+sudo chown -R 1000:1000 data/
+```
+
+**Common fixes:**
+
 - Ensure PUID/PGID match your user: `id`
-- Check directory ownership: `ls -la data/`
-- Restart init container: `docker-compose restart init-directories`
+- Run init container: `docker-compose restart init-directories`
 
 ### Storage Issues
-- Verify mount points exist and are accessible
-- Check disk space: `df -h`
-- Ensure proper permissions on storage directories
 
-### Pi-hole Issues
-- Check Pi-hole container status: `docker-compose ps pihole`
-- Verify DNS resolution: `nslookup google.com localhost`
-- Check Pi-hole logs: `docker-compose logs pihole`
-- Test blocking: `nslookup doubleclick.net localhost` (should be blocked)
-- Ensure port 53 is not in use by another service: `sudo netstat -tulpn | grep :53`
+```bash
+# Check disk space
+df -h
+
+# Verify mount points
+mount | grep -E "(downloads|media)"
+```
+
+**Common fixes:**
+
+- Ensure storage paths exist and are accessible
+- Check permissions on storage directories
+- Verify external drives are mounted correctly
+
+### Container Health Issues
+
+```bash
+# Check container status
+docker-compose ps
+
+# View container resource usage
+docker stats
+
+# Check system resources
+docker exec glances glances -t 1
+```
+
+### Service-Specific Issues
+
+#### Jellyfin
+
+- **No hardware acceleration**: Check Intel GPU drivers and device permissions
+- **Transcoding failures**: Monitor Dashboard → Activity for errors
+- **Network discovery not working**: Ensure `JELLYFIN_PublishedServerUrl` is set correctly
+
+#### Sonarr/Radarr
+
+- **Download client not found**: Ensure Prowlarr is configured and connected
+- **File permissions**: Check PUID/PGID settings and directory ownership
+
+#### Pi-hole (if using separate Pi-hole)
+
+- **DNS not resolving**: Ensure Pi-hole is running and accessible on your network
+- **Domain resolution failing**:
+
+  ```bash
+  # Test from Pi-hole server
+  nslookup jellyfin.river.local
+  
+  # Test from client device
+  nslookup jellyfin.river.local
+  ```
+
+- **Blocked queries**: Check Pi-hole query log for blocked domains
+- **DHCP issues**: Ensure Pi-hole DHCP is properly configured and devices are getting Pi-hole as DNS server
 
 ## 📝 Notes
 
 - **Initialization**: The `init-directories` container creates required directory structure on first run
 - **VPN Dependency**: Transmission will not start without a working VPN connection
+- **Network Architecture**: Services use Traefik reverse proxy for clean domain access
+- **DNS Requirements**: Pi-hole DNS configuration required for domain resolution (Pi-hole can be on separate machine)
 - **Resource Usage**: Consider CPU and RAM requirements for transcoding and multiple downloads
-- **Network**: All services use the `riverdale_network` Docker network
+- **Docker Network**: All services communicate through the `riverdale_network` bridge network
+- **Transmission Limitation**: Due to VPN network isolation, Transmission requires port-specific access (`transmission.river.local:9091`)
+- **Hardware Acceleration**: Intel QuickSync support requires compatible CPU and proper device mapping
+- **Pi-hole Setup**: The included `pihole-dns-setup.sh` script should be run on your Pi-hole server, not the Riverdale server
+
+## 📚 Additional Resources
+
+- **SERVICE_ACCESS_GUIDE.md**: Quick reference for all service URLs and access methods
+- **pihole-dns-setup.sh**: Automated script for Pi-hole DNS configuration
+- **Gluetun Documentation**: <https://github.com/qdm12/gluetun> for VPN provider setup
+- **Traefik Documentation**: <https://doc.traefik.io/traefik/> for advanced reverse proxy configuration
+- **Jellyfin Hardware Acceleration**: <https://jellyfin.org/docs/general/administration/hardware-acceleration/>
 
 ## 🤝 Contributing
 
-Feel free to submit issues and enhancement requests!
+Feel free to submit issues and enhancement requests! Some areas for improvement:
+
+- HTTPS/SSL certificate automation with Let's Encrypt
+- Additional VPN provider configurations
+- Custom Traefik middleware for enhanced security
+- Automated backup solutions
+- Monitoring and alerting enhancements
 
 ## 📄 License
 
-This configuration is provided as-is for personal use. Ensure compliance with local laws regarding media downloading and sharing.
+This configuration is provided as-is for personal use. Ensure compliance with local laws regarding media downloading and sharing. Always respect copyright and licensing requirements.
