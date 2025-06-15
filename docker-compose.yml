@@ -19,7 +19,7 @@ services:
         mkdir -p /downloads/complete/movies /downloads/complete/tv /downloads/complete/tv-sonarr /downloads/complete/radarr
         mkdir -p /downloads/incomplete
         mkdir -p /downloads/watch
-        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy
+        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
         echo 'Directory structure ready!'
@@ -101,6 +101,11 @@ services:
       - /dev/dri/renderD128:/dev/dri/renderD128
       - /dev/dri/card1:/dev/dri/card1
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.river.local`)"
+      - "traefik.http.routers.jellyfin.entrypoints=web"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
 
   # Sonarr - TV Show management
   sonarr:
@@ -119,6 +124,11 @@ services:
       - ${MEDIA_ROOT}/tv:/tv
       - ${DOWNLOADS_ROOT}:/downloads
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarr.rule=Host(`sonarr.river.local`)"
+      - "traefik.http.routers.sonarr.entrypoints=web"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
 
   # Radarr - Movie management
   radarr:
@@ -137,6 +147,11 @@ services:
       - ${MEDIA_ROOT}/movies:/movies
       - ${DOWNLOADS_ROOT}:/downloads
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.radarr.rule=Host(`radarr.river.local`)"
+      - "traefik.http.routers.radarr.entrypoints=web"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
 
   # Prowlarr - Indexer management
   prowlarr:
@@ -151,6 +166,11 @@ services:
     volumes:
       - ${CONFIG_ROOT}/prowlarr:/config
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.river.local`)"
+      - "traefik.http.routers.prowlarr.entrypoints=web"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
 
   # Watchtower - Automatic container updates
   watchtower:
@@ -175,7 +195,7 @@ services:
     depends_on:
       - init-directories
     ports:
-      - "${DASHY_PORT}:8080"
+      - "${DASHY_PORT:-4000}:8080"  # Changed from port 80 to 4000 to avoid conflict with Traefik
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -186,6 +206,71 @@ services:
     volumes:
       - ${CONFIG_ROOT}/dashy:/app/user-data
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashy.rule=Host(`dashy.river.local`)"
+      - "traefik.http.routers.dashy.entrypoints=web"
+      - "traefik.http.services.dashy.loadbalancer.server.port=8080"
+
+  # Glances - System monitoring
+  glances:
+    image: nicolargo/glances:latest
+    container_name: glances
+    ports:
+      - "${GLANCES_PORT:-61208}:61208"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - GLANCES_OPT=-w
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/os-release:/etc/os-release:ro
+    pid: host
+    privileged: true
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.glances.rule=Host(`glances.river.local`)"
+      - "traefik.http.routers.glances.entrypoints=web"
+      - "traefik.http.services.glances.loadbalancer.server.port=61208"
+
+  # Traefik - Reverse Proxy
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    ports:
+      - "80:80"      # HTTP traffic for services
+      - "8080:8080"  # Traefik dashboard
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${CONFIG_ROOT}/traefik:/etc/traefik
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --log.level=INFO
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.river.local`)"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+  # whoami - Simple service for testing Traefik
+  whoami:
+    image: traefik/whoami:latest
+    container_name: whoami
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.river.local`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"
 
 networks:
   default:
