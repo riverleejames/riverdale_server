@@ -1,17 +1,6 @@
 # Environment variables
 .env
 
-# Gluetun configuration (may contain sensitive VPN data)
-data/config/gluetun/*
-data/config/jellyfin/*
-data/config/sonarr/*
-data/config/radarr/*
-data/config/prowlarr/*
-data/config/transmission/*
-data/config/watchtower/*
-data/config/pihole/*
-data/config/dashy/config-backups/*
-
 
 
 # Downloaded content and media
