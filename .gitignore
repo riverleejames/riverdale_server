@@ -1,8 +1,6 @@
 # Environment variables
 .env
 
-
-
 # Downloaded content and media
 data/downloads/*
 data/media/*
