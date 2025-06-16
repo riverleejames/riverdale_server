@@ -79,7 +79,7 @@ services:
 
   # Jellyfin - Media Server
   jellyfin:
-    image: jellyfin/jellyfin:latest
+    image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     depends_on:
       - init-directories
@@ -87,11 +87,14 @@ services:
       - "992"  # Allow access to video devices for hardware acceleration (render group)
     ports:
       - "${JELLYFIN_PORT}:8096"
+      - "7359:7359"  # Discovery port
+      - "1900:1900/udp"  # Discovery port for SSDP
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
       - JELLYFIN_PublishedServerUrl=http://jellyfin.river.local  # For discovery
+      - DOCKER_MODS=linuxserver/mods:jellyfin-opencl-intel
     volumes:
       - ${CONFIG_ROOT}/jellyfin:/config
       - ${MEDIA_ROOT}:/media
@@ -99,8 +102,7 @@ services:
       - /tmp/jellyfin:/cache/transcodes
     # Intel QuickSync hardware acceleration
     devices:
-      - /dev/dri/renderD128:/dev/dri/renderD128
-      - /dev/dri/card1:/dev/dri/card1
+      - /dev/dri:/dev/dri # For Intel QuickSync
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
