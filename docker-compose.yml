@@ -20,8 +20,14 @@ services:
         mkdir -p /downloads/incomplete
         mkdir -p /downloads/watch
         mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik
+        echo 'Setting proper ownership and permissions...'
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
+        echo 'Ensuring correct ownership of critical directories...'
+        chown -R \$${PUID}:\$${PGID} /downloads/complete/tv-sonarr /downloads/complete/radarr 2>/dev/null || true
+        echo 'Setting execute permissions on media files for proper import...'
+        find /downloads/complete -name '*.mp4' -o -name '*.mkv' -o -name '*.avi' -o -name '*.mov' | xargs chmod 644 2>/dev/null || true
+        find /downloads/complete -type d | xargs chmod 755 2>/dev/null || true
         echo 'Directory structure ready!'
       "
     user: "0:0"  # Run as root to ensure directory creation works
@@ -44,9 +50,13 @@ services:
     environment:
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
       - VPN_TYPE=${VPN_TYPE}
-      - OPENVPN_USER=${OPENVPN_USER}
-      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      # WireGuard Configuration
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
+      # Server location settings
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      # Network and firewall settings
       - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/16,172.16.0.0/12,10.0.0.0/8
       - TZ=${TZ}
     restart: unless-stopped
@@ -229,8 +239,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/os-release:/etc/os-release:ro
+    group_add:
+      - "${PGID}"      # Add user group for file access
+      - "109"          # Docker group for socket access
     pid: host
-    privileged: true
+    privileged: true  # Still needed for system monitoring
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
