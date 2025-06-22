@@ -313,6 +313,16 @@ services:
       - SERVER_AUTHORITATIVE_MOVEMENT=${MINECRAFT_SERVER_AUTHORITATIVE_MOVEMENT:-server-auth-with-rewind}
       - PLAYER_IDLE_TIMEOUT=${MINECRAFT_PLAYER_IDLE_TIMEOUT:-30}
       - PLAYER_SLEEPING_PERCENTAGE=${MINECRAFT_PLAYER_SLEEPING_PERCENTAGE:-100}
+      # Permission and operator settings
+      - DEFAULT_PLAYER_PERMISSION_LEVEL=${MINECRAFT_DEFAULT_PLAYER_PERMISSION_LEVEL:-operator}
+      - PLAYER_PERMISSION_LEVEL=${MINECRAFT_PLAYER_PERMISSION_LEVEL:-operator}
+      - OPS=${MINECRAFT_OPS:-}
+      # World Settings
+      - LEVEL_SEED=${MINECRAFT_LEVEL_SEED:-}
+      - LEVEL_NAME=${MINECRAFT_LEVEL_NAME:-Bedrock level}
+      - LEVEL_TYPE=${MINECRAFT_LEVEL_TYPE:-DEFAULT}
+      # Custom server properties
+      - EXTRA_ARGS=${MINECRAFT_EXTRA_ARGS:-}
     volumes:
       - ${CONFIG_ROOT}/minecraft:/data
     restart: unless-stopped
