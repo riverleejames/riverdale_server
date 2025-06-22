@@ -319,8 +319,12 @@ services:
       - OPS=${MINECRAFT_OPS:-}
       # World Settings
       - LEVEL_SEED=${MINECRAFT_LEVEL_SEED:-}
-      - LEVEL_NAME=${MINECRAFT_LEVEL_NAME:-Bedrock level}
-      - LEVEL_TYPE=${MINECRAFT_LEVEL_TYPE:-DEFAULT}
+      - LEVEL_NAME=${MINECRAFT_LEVEL_NAME:-Kids Town World}
+      - LEVEL_TYPE=${MINECRAFT_LEVEL_TYPE:-FLAT}
+      # Bedrock-specific world settings for kid-friendly building
+      - FLAT_WORLD_LAYERS=${MINECRAFT_FLAT_WORLD_LAYERS:-minecraft:bedrock,2*minecraft:dirt,minecraft:grass_block}
+      - SPAWN_PROTECTION=${MINECRAFT_SPAWN_PROTECTION:-0}
+      - VIEW_DISTANCE=${MINECRAFT_VIEW_DISTANCE:-8}
       # Custom server properties
       - EXTRA_ARGS=${MINECRAFT_EXTRA_ARGS:-}
     volumes:
