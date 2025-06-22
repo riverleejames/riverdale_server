@@ -19,7 +19,7 @@ services:
         mkdir -p /downloads/complete/movies /downloads/complete/tv /downloads/complete/tv-sonarr /downloads/complete/radarr
         mkdir -p /downloads/incomplete
         mkdir -p /downloads/watch
-        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik
+        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik /config/minecraft
         echo 'Setting proper ownership and permissions...'
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
@@ -287,6 +287,65 @@ services:
       - "traefik.http.routers.whoami.rule=Host(`whoami.river.local`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.services.whoami.loadbalancer.server.port=80"
+
+  # Minecraft Bedrock Server - Native support for Android tablets and mobile devices
+  # Configured for external access
+  minecraft:
+    image: itzg/minecraft-bedrock-server:latest
+    container_name: minecraft-bedrock
+    depends_on:
+      - init-directories
+    ports:
+      # Expose Minecraft port to external network (0.0.0.0 means all interfaces)
+      - "0.0.0.0:${MINECRAFT_BEDROCK_PORT:-19132}:19132/udp"
+    environment:
+      # Server configuration with environment variable support
+      - EULA=TRUE
+      - SERVER_NAME=${MINECRAFT_SERVER_NAME:-Riverdale Family Server}
+      - GAMEMODE=${MINECRAFT_GAMEMODE:-creative}
+      - DIFFICULTY=${MINECRAFT_DIFFICULTY:-peaceful}
+      - ALLOW_CHEATS=${MINECRAFT_ALLOW_CHEATS:-true}
+      - MAX_PLAYERS=${MINECRAFT_MAX_PLAYERS:-10}
+      - ONLINE_MODE=${MINECRAFT_ONLINE_MODE:-true}
+      - WHITE_LIST=${MINECRAFT_WHITE_LIST:-false}
+      - TZ=${TZ}
+      # Additional security settings for external access
+      - SERVER_AUTHORITATIVE_MOVEMENT=${MINECRAFT_SERVER_AUTHORITATIVE_MOVEMENT:-server-auth-with-rewind}
+      - PLAYER_IDLE_TIMEOUT=${MINECRAFT_PLAYER_IDLE_TIMEOUT:-30}
+      - PLAYER_SLEEPING_PERCENTAGE=${MINECRAFT_PLAYER_SLEEPING_PERCENTAGE:-100}
+      # Permission and operator settings
+      - DEFAULT_PLAYER_PERMISSION_LEVEL=${MINECRAFT_DEFAULT_PLAYER_PERMISSION_LEVEL:-operator}
+      - PLAYER_PERMISSION_LEVEL=${MINECRAFT_PLAYER_PERMISSION_LEVEL:-operator}
+      - OPS=${MINECRAFT_OPS:-}
+      # World Settings
+      - LEVEL_SEED=${MINECRAFT_LEVEL_SEED:-}
+      - LEVEL_NAME=${MINECRAFT_LEVEL_NAME:-Bedrock level}
+      - LEVEL_TYPE=${MINECRAFT_LEVEL_TYPE:-DEFAULT}
+      # Custom server properties
+      - EXTRA_ARGS=${MINECRAFT_EXTRA_ARGS:-}
+    volumes:
+      - ${CONFIG_ROOT}/minecraft:/data
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    labels:
+      - "traefik.enable=false"  # Minecraft doesn't use HTTP
+
+  # DuckDNS - Dynamic DNS service for external access
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: duckdns
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS}
+      - TOKEN=${DUCKDNS_TOKEN}
+      - UPDATE_IP=ipv4
+      - LOG_FILE=false
+    volumes:
+      - ${CONFIG_ROOT}/duckdns:/config
+    restart: unless-stopped
 
 networks:
   default:
