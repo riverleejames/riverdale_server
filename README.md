@@ -645,3 +645,45 @@ Feel free to submit issues and enhancement requests! Some areas for improvement:
 ## 📄 License
 
 This configuration is provided as-is for personal use. Ensure compliance with local laws regarding media downloading and sharing. Always respect copyright and licensing requirements.
+
+## 🌍 Internet Exposure (NEW!)
+
+Want to share your media server with neighborhood kids? We've added comprehensive internet exposure capabilities!
+
+### 🚀 Quick Setup
+
+1. **Run the setup script:**
+
+   ```bash
+   ./scripts/setup-external-access.sh
+   ```
+
+2. **Configure your router** to forward ports 80 and 443 to your server
+
+3. **Start with external access:**
+
+   ```bash
+   docker-compose -f docker-compose.yml -f docker-compose.external.yml up -d
+   ```
+
+### 🔐 Security Features
+
+- **SSL/TLS encryption** with automatic Let's Encrypt certificates
+- **Authentication protection** for admin services
+- **Kids-friendly dashboard** with appropriate content access
+- **Rate limiting** and security headers
+- **Comprehensive monitoring** and access logging
+
+### 📚 Documentation
+
+- **[Internet Exposure Guide](INTERNET_EXPOSURE_GUIDE.md)** - Complete setup instructions
+- **[Security Guide](SECURITY_GUIDE.md)** - Essential security practices
+- **[Kids Dashboard Config](config-examples/dashy-kids-config.yml)** - Child-friendly interface
+
+### 🌐 External Access URLs
+
+Once configured, kids can access via:
+
+- **Main Dashboard**: `https://yourdomain.com`
+- **Jellyfin Media**: `https://jellyfin.yourdomain.com`
+- **Mobile Apps**: Available for iOS and Android
