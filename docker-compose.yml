@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Init container to create required directories
   init-directories:
@@ -19,7 +17,7 @@ services:
         mkdir -p /downloads/complete/movies /downloads/complete/tv /downloads/complete/tv-sonarr /downloads/complete/radarr
         mkdir -p /downloads/incomplete
         mkdir -p /downloads/watch
-        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik /config/minecraft
+        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik /config/minecraft /config/windows
         echo 'Setting proper ownership and permissions...'
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
@@ -43,8 +41,8 @@ services:
       - /dev/net/tun:/dev/net/tun
     ports:
       - "${TRANSMISSION_PORT}:9091"  # Transmission Web UI
-      - "51413:51413"    # Transmission torrent port
-      - "51413:51413/udp"  # Transmission torrent port UDP
+      - "51413:51413"                # Transmission torrent port
+      - "51413:51413/udp"            # Transmission torrent port UDP
     volumes:
       - ${CONFIG_ROOT}/gluetun:/gluetun
     environment:
@@ -287,6 +285,38 @@ services:
       - "traefik.http.routers.whoami.rule=Host(`whoami.river.local`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.services.whoami.loadbalancer.server.port=80"
+
+  # Windows 11 inside Docker (dockurr/windows)
+  # Access via web viewer on http://127.0.0.1:8006 during installation, or use RDP on port 3389 after.
+  windows:
+    image: dockurr/windows:latest
+    container_name: windows
+    environment:
+      # Choose Windows version; defaults to 11 Pro. See README for alternatives.
+      - VERSION=11
+      # Resource allocations tuned for this host (6 cores, ~32GB RAM, >500GB free disk):
+      - RAM_SIZE=8G      # Adjust if you need more/less; keep enough for host and other services
+      - CPU_CORES=4      # Leaves 2 cores free for the host and other containers
+      - DISK_SIZE=128G   # Default is 64G; 128G is a comfortable starting point
+      # Optional: set credentials before first install
+      # - USERNAME=YourUser
+      # - PASSWORD=YourPass
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8006:8006"            # Web-based viewer
+      - "3389:3389/tcp"        # RDP (TCP)
+      - "3389:3389/udp"        # RDP (UDP)
+    volumes:
+      # Store VM disks/config here to keep with other configs
+      - ${CONFIG_ROOT}/windows:/storage
+      # Optional: host folder share will appear as \\host.lan\Data inside Windows
+      # - ${DOWNLOADS_ROOT}:/data
+    restart: always
+    stop_grace_period: 2m
 
   # Minecraft Bedrock Server - Native support for Android tablets and mobile devices
   # Configured for external access
