@@ -51,6 +51,7 @@ services:
       # OpenVPN Configuration
       - OPENVPN_USER=${OPENVPN_USER}
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - OPENVPN_PROTOCOL=${OPENVPN_PROTOCOL:-udp}
       - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
       # Server location settings
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}
@@ -84,6 +85,33 @@ services:
       - ${DOWNLOADS_ROOT}:/downloads
       - ${DOWNLOADS_ROOT}/watch:/watch
     restart: unless-stopped
+
+  # Flood - Modern UI for Transmission
+  flood:
+    image: jesec/flood:latest
+    container_name: flood
+    depends_on:
+      - gluetun
+      - transmission
+    ports:
+      - "${FLOOD_PORT:-3000}:3000"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - FLOOD_OPTION_HOST=0.0.0.0
+      - FLOOD_OPTION_PORT=3000
+      - FLOOD_OPTION_ALLOWEDPATH=${DOWNLOADS_ROOT}
+    volumes:
+      - ${CONFIG_ROOT}/flood:/data
+      - ${DOWNLOADS_ROOT}:/downloads
+    user: "${PUID}:${PGID}"
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.flood.rule=Host(`flood.river.local`)"
+      - "traefik.http.routers.flood.entrypoints=web"
+      - "traefik.http.services.flood.loadbalancer.server.port=3000"
 
   # Jellyfin - Media Server
   jellyfin:
