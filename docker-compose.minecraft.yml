@@ -1,0 +1,63 @@
+# Docker Compose file for Minecraft Bedrock Server
+# Start with: docker-compose -f docker-compose.minecraft.yml up -d
+# Stop with: docker-compose -f docker-compose.minecraft.yml down
+
+services:
+  # Minecraft Bedrock Server - Native support for Android tablets and mobile devices
+  # Configured for external access
+  minecraft:
+    image: itzg/minecraft-bedrock-server:latest
+    container_name: minecraft-bedrock
+    ports:
+      # Expose Minecraft port to external network (0.0.0.0 means all interfaces)
+      - "0.0.0.0:${MINECRAFT_BEDROCK_PORT:-19132}:19132/udp"
+    environment:
+      # Server configuration with environment variable support
+      - EULA=TRUE
+      - SERVER_NAME=${MINECRAFT_SERVER_NAME:-Riverdale Family Server}
+      - GAMEMODE=${MINECRAFT_GAMEMODE:-creative}
+      - DIFFICULTY=${MINECRAFT_DIFFICULTY:-peaceful}
+      - ALLOW_CHEATS=${MINECRAFT_ALLOW_CHEATS:-true}
+      - MAX_PLAYERS=${MINECRAFT_MAX_PLAYERS:-10}
+      - ONLINE_MODE=${MINECRAFT_ONLINE_MODE:-true}
+      - WHITE_LIST=${MINECRAFT_WHITE_LIST:-false}
+      - TZ=${TZ}
+      # Additional security settings for external access
+      - SERVER_AUTHORITATIVE_MOVEMENT=${MINECRAFT_SERVER_AUTHORITATIVE_MOVEMENT:-server-auth-with-rewind}
+      - PLAYER_IDLE_TIMEOUT=${MINECRAFT_PLAYER_IDLE_TIMEOUT:-30}
+      - PLAYER_SLEEPING_PERCENTAGE=${MINECRAFT_PLAYER_SLEEPING_PERCENTAGE:-100}
+      # Permission and operator settings
+      - DEFAULT_PLAYER_PERMISSION_LEVEL=${MINECRAFT_DEFAULT_PLAYER_PERMISSION_LEVEL:-operator}
+      - PLAYER_PERMISSION_LEVEL=${MINECRAFT_PLAYER_PERMISSION_LEVEL:-operator}
+      - OPS=${MINECRAFT_OPS:-}
+      # World Settings
+      - LEVEL_SEED=${MINECRAFT_LEVEL_SEED:-}
+      - LEVEL_NAME=${MINECRAFT_LEVEL_NAME:-Kids Town World}
+      - LEVEL_TYPE=${MINECRAFT_LEVEL_TYPE:-FLAT}
+      # Bedrock-specific world settings for kid-friendly building
+      - FLAT_WORLD_LAYERS=${MINECRAFT_FLAT_WORLD_LAYERS:-minecraft:bedrock,2*minecraft:dirt,minecraft:grass_block}
+      - SPAWN_PROTECTION=${MINECRAFT_SPAWN_PROTECTION:-0}
+      - VIEW_DISTANCE=${MINECRAFT_VIEW_DISTANCE:-8}
+      # Custom server properties
+      - EXTRA_ARGS=${MINECRAFT_EXTRA_ARGS:-}
+    volumes:
+      - ${CONFIG_ROOT}/minecraft:/data
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    tty: true
+    stdin_open: true
+    healthcheck:
+      test: ["CMD-SHELL", "mc-monitor status-bedrock --host localhost --port 19132 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    labels:
+      - "traefik.enable=false"  # Minecraft doesn't use HTTP
+
+networks:
+  riverdale_network:
+    name: riverdale_network
+    driver: bridge
+    external: true  # Use existing network from main docker-compose

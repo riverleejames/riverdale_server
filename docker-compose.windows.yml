@@ -1,0 +1,44 @@
+# Docker Compose file for Windows 11 VM
+# Start with: docker-compose -f docker-compose.windows.yml up -d
+# Stop with: docker-compose -f docker-compose.windows.yml down
+# Access via web viewer on http://127.0.0.1:8006 during installation, or use RDP on port 3389 after.
+
+services:
+  windows:
+    image: dockurr/windows:latest
+    container_name: windows
+    environment:
+      # Choose Windows version; defaults to 11 Pro. See README for alternatives.
+      - VERSION=11
+      # Resource allocations tuned for this host (6 cores, ~32GB RAM, >500GB free disk):
+      - RAM_SIZE=8G      # Adjust if you need more/less; keep enough for host and other services
+      - CPU_CORES=4      # Leaves 2 cores free for the host and other containers
+      - DISK_SIZE=128G   # Default is 64G; 128G is a comfortable starting point
+      # Optional: set credentials before first install
+      # - USERNAME=YourUser
+      # - PASSWORD=YourPass
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8006:8006"            # Web-based viewer
+      - "3389:3389/tcp"        # RDP (TCP)
+      - "3389:3389/udp"        # RDP (UDP)
+    volumes:
+      # Store VM disks/config here to keep with other configs
+      - ${CONFIG_ROOT}/windows:/storage
+      # Optional: host folder share will appear as \\host.lan\Data inside Windows
+      # Uncomment the line below to share downloads folder with Windows
+      # - ${DOWNLOADS_ROOT}:/data
+    restart: unless-stopped
+    stop_grace_period: 2m
+    networks:
+      - riverdale_network
+
+networks:
+  riverdale_network:
+    name: riverdale_network
+    driver: bridge
+    external: true  # Use existing network from main docker-compose

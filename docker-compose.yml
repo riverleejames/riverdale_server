@@ -1,36 +1,4 @@
 services:
-  # Init container to create required directories
-  init-directories:
-    image: alpine:latest
-    container_name: init-directories
-    volumes:
-      - ${MEDIA_ROOT}:/media
-      - ${DOWNLOADS_ROOT}:/downloads
-      - ${CONFIG_ROOT}:/config
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-    command: >
-      sh -c "
-        echo 'Creating required directories...'
-        mkdir -p /media/movies /media/tv
-        mkdir -p /downloads/complete/movies /downloads/complete/tv /downloads/complete/tv-sonarr /downloads/complete/radarr
-        mkdir -p /downloads/incomplete
-        mkdir -p /downloads/watch
-        mkdir -p /config/jellyfin /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/gluetun /config/watchtower /config/dashy /config/traefik /config/minecraft /config/windows
-        echo 'Setting proper ownership and permissions...'
-        chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
-        chmod -R 755 /media /downloads /config 2>/dev/null || true
-        echo 'Ensuring correct ownership of critical directories...'
-        chown -R \$${PUID}:\$${PGID} /downloads/complete/tv-sonarr /downloads/complete/radarr 2>/dev/null || true
-        echo 'Setting execute permissions on media files for proper import...'
-        find /downloads/complete -name '*.mp4' -o -name '*.mkv' -o -name '*.avi' -o -name '*.mov' | xargs chmod 644 2>/dev/null || true
-        find /downloads/complete -type d | xargs chmod 755 2>/dev/null || true
-        echo 'Directory structure ready!'
-      "
-    user: "0:0"  # Run as root to ensure directory creation works
-    restart: "no"
-
   # VPN Container - All torrent traffic goes through this
   gluetun:
     image: qmcgaw/gluetun:latest
@@ -58,13 +26,17 @@ services:
       # Network and firewall settings
       - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/16,172.16.0.0/12,10.0.0.0/8
       - TZ=${TZ}
+      # Logging level
+      - LOG_LEVEL=info
     restart: unless-stopped
+    networks:
+      - riverdale_network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 90s
 
   # Transmission - Torrent client (runs through VPN)
   transmission:
@@ -72,8 +44,8 @@ services:
     container_name: transmission
     network_mode: "service:gluetun"  # Use gluetun's network (VPN)
     depends_on:
-      - gluetun
-      - init-directories
+      gluetun:
+        condition: service_healthy
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -91,8 +63,10 @@ services:
     image: jesec/flood:latest
     container_name: flood
     depends_on:
-      - gluetun
-      - transmission
+      gluetun:
+        condition: service_healthy
+      transmission:
+        condition: service_started
     ports:
       - "${FLOOD_PORT:-3000}:3000"
     environment:
@@ -107,6 +81,14 @@ services:
       - ${DOWNLOADS_ROOT}:/downloads
     user: "${PUID}:${PGID}"
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.flood.rule=Host(`flood.river.local`)"
@@ -117,8 +99,6 @@ services:
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
-    depends_on:
-      - init-directories
     group_add:
       - "992"  # Allow access to video devices for hardware acceleration (render group)
     ports:
@@ -133,13 +113,20 @@ services:
       - DOCKER_MODS=linuxserver/mods:jellyfin-opencl-intel
     volumes:
       - ${CONFIG_ROOT}/jellyfin:/config
-      - ${MEDIA_ROOT}:/media
-      - /tmp:/tmp
+      - ${MEDIA_ROOT}:/media:ro  # Read-only media access
       - /tmp/jellyfin:/cache/transcodes
     # Intel QuickSync hardware acceleration
     devices:
       - /dev/dri:/dev/dri # For Intel QuickSync
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8096/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.river.local`)"
@@ -150,8 +137,6 @@ services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
-    depends_on:
-      - init-directories
     ports:
       - "${SONARR_PORT}:8989"
     environment:
@@ -163,6 +148,14 @@ services:
       - ${MEDIA_ROOT}/tv:/tv
       - ${DOWNLOADS_ROOT}:/downloads
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8989/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sonarr.rule=Host(`sonarr.river.local`)"
@@ -173,8 +166,6 @@ services:
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
-    depends_on:
-      - init-directories
     ports:
       - "${RADARR_PORT}:7878"
     environment:
@@ -186,6 +177,14 @@ services:
       - ${MEDIA_ROOT}/movies:/movies
       - ${DOWNLOADS_ROOT}:/downloads
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7878/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.radarr.rule=Host(`radarr.river.local`)"
@@ -205,6 +204,14 @@ services:
     volumes:
       - ${CONFIG_ROOT}/prowlarr:/config
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9696/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.river.local`)"
@@ -218,21 +225,22 @@ services:
     environment:
       - TZ=${TZ}
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_INCLUDE_STOPPED=false  # Don't update stopped containers
       - WATCHTOWER_SCHEDULE=0 0 4 * * *  # Daily at 4:00 AM
       - WATCHTOWER_NOTIFICATIONS=shoutrrr
       - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL:-}
+      - WATCHTOWER_ROLLING_RESTART=true  # Restart one at a time
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${CONFIG_ROOT}/watchtower:/config
     restart: unless-stopped
+    networks:
+      - riverdale_network
 
   # Dashy - Dashboard for all services
   dashy:
     image: lissy93/dashy:latest
     container_name: dashy
-    depends_on:
-      - init-directories
     ports:
       - "${DASHY_PORT:-4000}:8080"  # Changed from port 80 to 4000 to avoid conflict with Traefik
     environment:
@@ -245,6 +253,14 @@ services:
     volumes:
       - ${CONFIG_ROOT}/dashy:/app/user-data
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashy.rule=Host(`dashy.river.local`)"
@@ -271,6 +287,14 @@ services:
     pid: host
     privileged: true  # Still needed for system monitoring
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:61208/api/3/config || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.glances.rule=Host(`glances.river.local`)"
@@ -294,9 +318,20 @@ services:
       - --api.insecure=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=riverdale_network
       - --entrypoints.web.address=:80
       - --log.level=INFO
+      - --accesslog=false
+      - --providers.docker.watch=true
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.river.local`)"
@@ -308,90 +343,19 @@ services:
     image: traefik/whoami:latest
     container_name: whoami
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`whoami.river.local`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.services.whoami.loadbalancer.server.port=80"
-
-  # Windows 11 inside Docker (dockurr/windows)
-  # Access via web viewer on http://127.0.0.1:8006 during installation, or use RDP on port 3389 after.
-  windows:
-    image: dockurr/windows:latest
-    container_name: windows
-    environment:
-      # Choose Windows version; defaults to 11 Pro. See README for alternatives.
-      - VERSION=11
-      # Resource allocations tuned for this host (6 cores, ~32GB RAM, >500GB free disk):
-      - RAM_SIZE=8G      # Adjust if you need more/less; keep enough for host and other services
-      - CPU_CORES=4      # Leaves 2 cores free for the host and other containers
-      - DISK_SIZE=128G   # Default is 64G; 128G is a comfortable starting point
-      # Optional: set credentials before first install
-      # - USERNAME=YourUser
-      # - PASSWORD=YourPass
-    devices:
-      - /dev/kvm
-      - /dev/net/tun
-    cap_add:
-      - NET_ADMIN
-    ports:
-      - "8006:8006"            # Web-based viewer
-      - "3389:3389/tcp"        # RDP (TCP)
-      - "3389:3389/udp"        # RDP (UDP)
-    volumes:
-      # Store VM disks/config here to keep with other configs
-      - ${CONFIG_ROOT}/windows:/storage
-      # Optional: host folder share will appear as \\host.lan\Data inside Windows
-      # - ${DOWNLOADS_ROOT}:/data
-    restart: always
-    stop_grace_period: 2m
-
-  # Minecraft Bedrock Server - Native support for Android tablets and mobile devices
-  # Configured for external access
-  minecraft:
-    image: itzg/minecraft-bedrock-server:latest
-    container_name: minecraft-bedrock
-    depends_on:
-      - init-directories
-    ports:
-      # Expose Minecraft port to external network (0.0.0.0 means all interfaces)
-      - "0.0.0.0:${MINECRAFT_BEDROCK_PORT:-19132}:19132/udp"
-    environment:
-      # Server configuration with environment variable support
-      - EULA=TRUE
-      - SERVER_NAME=${MINECRAFT_SERVER_NAME:-Riverdale Family Server}
-      - GAMEMODE=${MINECRAFT_GAMEMODE:-creative}
-      - DIFFICULTY=${MINECRAFT_DIFFICULTY:-peaceful}
-      - ALLOW_CHEATS=${MINECRAFT_ALLOW_CHEATS:-true}
-      - MAX_PLAYERS=${MINECRAFT_MAX_PLAYERS:-10}
-      - ONLINE_MODE=${MINECRAFT_ONLINE_MODE:-true}
-      - WHITE_LIST=${MINECRAFT_WHITE_LIST:-false}
-      - TZ=${TZ}
-      # Additional security settings for external access
-      - SERVER_AUTHORITATIVE_MOVEMENT=${MINECRAFT_SERVER_AUTHORITATIVE_MOVEMENT:-server-auth-with-rewind}
-      - PLAYER_IDLE_TIMEOUT=${MINECRAFT_PLAYER_IDLE_TIMEOUT:-30}
-      - PLAYER_SLEEPING_PERCENTAGE=${MINECRAFT_PLAYER_SLEEPING_PERCENTAGE:-100}
-      # Permission and operator settings
-      - DEFAULT_PLAYER_PERMISSION_LEVEL=${MINECRAFT_DEFAULT_PLAYER_PERMISSION_LEVEL:-operator}
-      - PLAYER_PERMISSION_LEVEL=${MINECRAFT_PLAYER_PERMISSION_LEVEL:-operator}
-      - OPS=${MINECRAFT_OPS:-}
-      # World Settings
-      - LEVEL_SEED=${MINECRAFT_LEVEL_SEED:-}
-      - LEVEL_NAME=${MINECRAFT_LEVEL_NAME:-Kids Town World}
-      - LEVEL_TYPE=${MINECRAFT_LEVEL_TYPE:-FLAT}
-      # Bedrock-specific world settings for kid-friendly building
-      - FLAT_WORLD_LAYERS=${MINECRAFT_FLAT_WORLD_LAYERS:-minecraft:bedrock,2*minecraft:dirt,minecraft:grass_block}
-      - SPAWN_PROTECTION=${MINECRAFT_SPAWN_PROTECTION:-0}
-      - VIEW_DISTANCE=${MINECRAFT_VIEW_DISTANCE:-8}
-      # Custom server properties
-      - EXTRA_ARGS=${MINECRAFT_EXTRA_ARGS:-}
-    volumes:
-      - ${CONFIG_ROOT}/minecraft:/data
-    restart: unless-stopped
-    tty: true
-    stdin_open: true
-    labels:
-      - "traefik.enable=false"  # Minecraft doesn't use HTTP
 
   # DuckDNS - Dynamic DNS service for external access
   duckdns:
@@ -408,7 +372,19 @@ services:
     volumes:
       - ${CONFIG_ROOT}/duckdns:/config
     restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q 'OK' /config/duckdns.log || exit 1"]
+      interval: 300s  # Check every 5 minutes
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 networks:
-  default:
+  riverdale_network:
     name: riverdale_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
