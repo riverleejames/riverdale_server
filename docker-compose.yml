@@ -346,41 +346,11 @@ services:
     restart: unless-stopped
     networks:
       - riverdale_network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`whoami.river.local`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.services.whoami.loadbalancer.server.port=80"
-
-  # DuckDNS - Dynamic DNS service for external access
-  duckdns:
-    image: lscr.io/linuxserver/duckdns:latest
-    container_name: duckdns
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS}
-      - TOKEN=${DUCKDNS_TOKEN}
-      - UPDATE_IP=ipv4
-      - LOG_FILE=false
-    volumes:
-      - ${CONFIG_ROOT}/duckdns:/config
-    restart: unless-stopped
-    networks:
-      - riverdale_network
-    healthcheck:
-      test: ["CMD-SHELL", "grep -q 'OK' /config/duckdns.log || exit 1"]
-      interval: 300s  # Check every 5 minutes
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
 networks:
   riverdale_network:
