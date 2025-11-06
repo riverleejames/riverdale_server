@@ -1,0 +1,42 @@
+services:
+  # Nextcloud AIO - All-in-One Nextcloud deployment
+  # The mastercontainer manages all Nextcloud containers automatically
+  nextcloud-aio-mastercontainer:
+    image: nextcloud/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    restart: unless-stopped
+    init: true
+    ports:
+      # AIO interface (admin panel)
+      - "${NEXTCLOUD_AIO_PORT:-8080}:8080"
+      # Apache port (Nextcloud web interface)
+      - "${NEXTCLOUD_PORT:-8443}:8443"
+    volumes:
+      # Where all Nextcloud data will be stored
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      # Mount the docker socket (required for AIO to manage containers)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # Timezone
+      - TZ=${TZ}
+      # Apache port (must match the port mapping above - internal port 8443)
+      - APACHE_PORT=11000
+      # Skip domain validation (useful for local networks)
+      # Set to empty string if using a real domain
+      - SKIP_DOMAIN_VALIDATION=${NEXTCLOUD_SKIP_DOMAIN_VALIDATION:-false}
+      # Optional: Set a specific Nextcloud datadir location
+      # - NEXTCLOUD_DATADIR=${NEXTCLOUD_DATADIR}
+      # Optional: Backup location
+      # - NEXTCLOUD_BACKUP_DIR=${NEXTCLOUD_BACKUP_DIR}
+      # Optional: Mount additional directories (comma-separated)
+      # - NEXTCLOUD_MOUNT=${NEXTCLOUD_MOUNT}
+    networks:
+      - riverdale_network
+
+networks:
+  riverdale_network:
+    external: true
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
