@@ -1,0 +1,23 @@
+services:
+  # GitLab Runner - CI/CD runner for GitLab
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: unless-stopped
+    volumes:
+      - ${CONFIG_ROOT}/gitlab-runner:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=${TZ}
+      # Set concurrent jobs limit (default: 1)
+      # This can also be set in config.toml
+      - RUNNER_CONCURRENT=${GITLAB_RUNNER_CONCURRENT:-4}
+    networks:
+      - riverdale_network
+    # Optional: If you want to expose metrics
+    # ports:
+    #   - "9252:9252"
+
+networks:
+  riverdale_network:
+    external: true
