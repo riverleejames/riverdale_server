@@ -307,19 +307,25 @@ services:
     container_name: traefik
     ports:
       - "80:80"      # HTTP traffic for services
+      - "443:443"    # HTTPS traffic
       - "8080:8080"  # Traefik dashboard
     environment:
       - TZ=${TZ}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${CONFIG_ROOT}/traefik:/etc/traefik
+      - ${CONFIG_ROOT}/traefik/dynamic:/etc/traefik/dynamic:ro
+      - ${CONFIG_ROOT}/traefik/certs:/etc/traefik/certs:ro
     command:
       - --api.dashboard=true
       - --api.insecure=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=riverdale_network
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
       - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
       - --log.level=INFO
       - --accesslog=false
       - --providers.docker.watch=true
