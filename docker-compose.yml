@@ -76,6 +76,7 @@ services:
       - FLOOD_OPTION_HOST=0.0.0.0
       - FLOOD_OPTION_PORT=3000
       - FLOOD_OPTION_ALLOWEDPATH=${DOWNLOADS_ROOT}
+      - FLOOD_OPTION_RUNDIR=/data
     volumes:
       - ${CONFIG_ROOT}/flood:/data
       - ${DOWNLOADS_ROOT}:/downloads
