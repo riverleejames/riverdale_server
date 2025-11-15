@@ -15,7 +15,7 @@ This setup provides a full-featured media server with the following capabilities
 - **Reverse proxy** with Traefik for clean domain access
 - **System monitoring** with Glances
 - **Service dashboard** with Dashy
-- **Automatic updates** with Watchtower
+- **Container update monitoring** with WUD (What's Up Docker)
 - **Minecraft Bedrock server** for mobile/tablet play (separate stack)
 - **Windows 11 VM** via Docker (separate stack)
 - **Dynamic DNS** with DuckDNS for external access
@@ -59,6 +59,7 @@ All services are accessible via clean domain names through Traefik reverse proxy
 | **Glances** | `glances.river.local` | System monitoring |
 | **Dashy** | `dashy.river.local` | Service dashboard |
 | **Traefik** | `traefik.river.local` | Reverse proxy dashboard |
+| **WUD** | `wud.river.local` | Container update monitoring |
 
 ### Direct Port Access
 
@@ -73,6 +74,7 @@ All services are accessible via clean domain names through Traefik reverse proxy
 | **Dashy** | `http://localhost:4000` | 4000 | Dashboard |
 | **Glances** | `http://localhost:61208` | 61208 | Monitoring |
 | **Traefik** | `http://localhost:8080` | 8080 | Proxy dashboard |
+| **WUD** | `http://localhost:3100` | 3100 | Update monitoring |
 | **Windows VM** | `http://localhost:8006` | 8006 | Web viewer |
 | **Windows RDP** | `localhost:3389` | 3389 | Remote desktop |
 | **Minecraft** | `YOUR_IP:19132` | 19132/UDP | Bedrock server |
@@ -91,7 +93,7 @@ All services are accessible via clean domain names through Traefik reverse proxy
 - **Traefik** (80/8080): Reverse proxy for clean domain access
 - **Dashy** (4000): Customizable dashboard for all services
 - **Glances** (61208): Real-time system monitoring
-- **Watchtower**: Automatic container updates (4 AM daily)
+- **WUD** (3100): Container update monitoring with web UI (checks daily at 4 AM)
 - **DuckDNS**: Dynamic DNS for external access
 - **Whoami**: Test service for Traefik routing
 
@@ -144,7 +146,7 @@ Data Storage (configured in .env):
 │   ├── traefik/
 │   ├── dashy/
 │   ├── glances/
-│   ├── watchtower/
+│   ├── wud/
 │   ├── duckdns/
 │   ├── minecraft/
 │   └── windows/
@@ -242,9 +244,6 @@ MINECRAFT_LEVEL_TYPE=FLAT
 # DuckDNS Configuration (for external access)
 DUCKDNS_SUBDOMAINS=your-subdomain
 DUCKDNS_TOKEN=your-duckdns-token
-
-# Watchtower Notifications (optional)
-WATCHTOWER_NOTIFICATION_URL=
 ```
 
 ### DNS Configuration (Optional)
@@ -424,26 +423,19 @@ Access via Minecraft Bedrock Edition:
 - **Proper Dependency Chain**: No circular dependencies or race conditions
 - **Resource Management**: Windows VM only consumes resources when running
 
-## 🔄 Automatic Updates & Maintenance
+## 🔄 Container Updates & Maintenance
 
-### Watchtower (Automatic Updates)
+### WUD - What's Up Docker (Update Monitoring)
 
-**Watchtower** keeps your containers automatically updated:
+**WUD** monitors your containers for available updates:
 
-- **Schedule**: Daily at 4:00 AM
-- **Rolling Restarts**: Updates one service at a time
-- **Automatic Cleanup**: Removes old images
-- **Notification Support**: Discord, Slack, email, etc.
+- **Schedule**: Checks daily at 4:00 AM
+- **Web UI**: Visual dashboard at `http://wud.river.local` or `http://localhost:3100`
+- **Update Detection**: Automatically detects new versions for all containers
+- **Notification Support**: Can trigger notifications via webhooks, email, etc.
+- **Flexible Updates**: Unlike Watchtower, WUD focuses on monitoring and lets you control updates
 
-Configure notifications in `.env`:
-
-```bash
-# Discord
-WATCHTOWER_NOTIFICATION_URL=discord://webhook_id/webhook_token
-
-# Email
-WATCHTOWER_NOTIFICATION_URL=smtp://user:pass@host:port/?fromAddress=from@example.com&toAddresses=to@example.com
-```
+Access the WUD dashboard to see which containers have updates available. You can then manually update containers or configure triggers for automatic updates.
 
 ### Management Commands
 
@@ -809,13 +801,14 @@ environment:
   DISK_SIZE: "256G"  # Larger disk
 ```
 
-### Watchtower Scheduling
+### WUD Update Check Scheduling
 
-Edit `docker-compose.yml` to change update schedule:
+Edit `docker-compose.yml` to change when WUD checks for updates:
 
 ```yaml
-watchtower:
-  command: --schedule "0 0 2 * * *"  # 2 AM instead of 4 AM
+wud:
+  environment:
+    - WUD_WATCHER_LOCAL_CRON=0 2 * * *  # 2 AM instead of 4 AM
 ```
 
 ## 🤝 Getting Help
@@ -868,6 +861,7 @@ docker inspect gluetun | grep -A 20 Health
 - **Radarr Wiki**: <https://wiki.servarr.com/radarr>
 - **Prowlarr Wiki**: <https://wiki.servarr.com/prowlarr>
 - **Traefik Docs**: <https://doc.traefik.io/traefik/>
+- **WUD Docs**: <https://getwud.github.io/wud/>
 - **Minecraft Bedrock**: <https://github.com/itzg/docker-minecraft-bedrock-server>
 
 ## 📄 License

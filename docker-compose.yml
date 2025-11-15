@@ -218,24 +218,34 @@ services:
       - "traefik.http.routers.prowlarr.entrypoints=web"
       - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
 
-  # Watchtower - Automatic container updates
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: watchtower
+  # WUD (What's Up Docker) - Container update monitoring
+  wud:
+    image: getwud/wud:latest
+    container_name: wud
+    ports:
+      - "3100:3000"  # WUD web UI
     environment:
       - TZ=${TZ}
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_INCLUDE_STOPPED=false  # Don't update stopped containers
-      - WATCHTOWER_SCHEDULE=0 0 4 * * *  # Daily at 4:00 AM
-      - WATCHTOWER_NOTIFICATIONS=shoutrrr
-      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL:-}
-      - WATCHTOWER_ROLLING_RESTART=true  # Restart one at a time
+      - WUD_WATCHER_LOCAL_SOCKET=/var/run/docker.sock
+      - WUD_WATCHER_LOCAL_CRON=0 4 * * *  # Daily at 4:00 AM
+      - WUD_WATCHER_LOCAL_WATCHBYDEFAULT=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${CONFIG_ROOT}/watchtower:/config
+      - ${CONFIG_ROOT}/wud:/store
     restart: unless-stopped
     networks:
       - riverdale_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wud.rule=Host(`wud.river.local`)"
+      - "traefik.http.routers.wud.entrypoints=web"
+      - "traefik.http.services.wud.loadbalancer.server.port=3000"
 
   # Dashy - Dashboard for all services
   dashy:
