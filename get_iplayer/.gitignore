@@ -1,9 +1,0 @@
-# Ignore downloaded content
-*.mp4
-*.m4a
-*.mkv
-*.avi
-
-# Ignore cache and temporary files
-cache/
-tmp/
