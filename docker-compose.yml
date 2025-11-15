@@ -58,6 +58,27 @@ services:
       - ${DOWNLOADS_ROOT}/watch:/watch
     restart: unless-stopped
 
+  # get_iplayer - BBC iPlayer downloader (runs through VPN)
+  get_iplayer:
+    build:
+      context: ./get_iplayer
+      dockerfile: Dockerfile
+    container_name: get_iplayer
+    network_mode: "service:gluetun"  # Use gluetun's network (VPN for UK)
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/get_iplayer:/root/.get_iplayer
+      - ${MEDIA_ROOT}/tv:/tv
+      - ${MEDIA_ROOT}/movies:/movies
+    restart: unless-stopped
+    command: tail -f /dev/null  # Keep container running
+
   # Flood - Modern UI for Transmission
   flood:
     image: jesec/flood:latest
