@@ -37,6 +37,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    labels:
+      - "wud.watch=true"
 
   # Transmission - Torrent client (runs through VPN)
   transmission:
@@ -57,6 +59,8 @@ services:
       - ${DOWNLOADS_ROOT}:/downloads
       - ${DOWNLOADS_ROOT}/watch:/watch
     restart: unless-stopped
+    labels:
+      - "wud.watch=true"
 
 
   # Flood - Modern UI for Transmission
@@ -96,44 +100,36 @@ services:
       - "traefik.http.routers.flood.rule=Host(`flood.river.local`)"
       - "traefik.http.routers.flood.entrypoints=web"
       - "traefik.http.services.flood.loadbalancer.server.port=3000"
+      - "wud.watch=true"
+      - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
-  # Jellyfin - Media Server
-  jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
-    container_name: jellyfin
-    group_add:
-      - "992"  # Allow access to video devices for hardware acceleration (render group)
-    ports:
-      - "${JELLYFIN_PORT}:8096"
-      - "7359:7359"  # Discovery port
-      - "1900:1900/udp"  # Discovery port for SSDP
+  # Plex - Media Server
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - JELLYFIN_PublishedServerUrl=http://jellyfin.river.local  # For discovery
-      - DOCKER_MODS=linuxserver/mods:jellyfin-opencl-intel
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM:-}
     volumes:
-      - ${CONFIG_ROOT}/jellyfin:/config
-      - ${MEDIA_ROOT}:/media:ro  # Read-only media access
-      - /tmp/jellyfin:/cache/transcodes
-    # Intel QuickSync hardware acceleration
+      - ${CONFIG_ROOT}/plex:/config
+      - ${MEDIA_ROOT}:/media:ro
+      - /dev/shm:/transcode
     devices:
-      - /dev/dri:/dev/dri # For Intel QuickSync
+      - /dev/dri:/dev/dri
     restart: unless-stopped
-    networks:
-      - riverdale_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8096/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:32400/web || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.river.local`)"
-      - "traefik.http.routers.jellyfin.entrypoints=web"
-      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "wud.watch=true"
+      - "wud.tag.include=^\\d+\\.\\d+\\.\\d+\\.\\d+$$"
 
   # Sonarr - TV Show management
   sonarr:
@@ -163,6 +159,8 @@ services:
       - "traefik.http.routers.sonarr.rule=Host(`sonarr.river.local`)"
       - "traefik.http.routers.sonarr.entrypoints=web"
       - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+      - "wud.watch=true"
+      - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
   # Radarr - Movie management
   radarr:
@@ -192,6 +190,8 @@ services:
       - "traefik.http.routers.radarr.rule=Host(`radarr.river.local`)"
       - "traefik.http.routers.radarr.entrypoints=web"
       - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+      - "wud.watch=true"
+      - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
   # Prowlarr - Indexer management
   prowlarr:
@@ -219,6 +219,8 @@ services:
       - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.river.local`)"
       - "traefik.http.routers.prowlarr.entrypoints=web"
       - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+      - "wud.watch=true"
+      - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
   # WUD (What's Up Docker) - Container update monitoring
   wud:
@@ -231,14 +233,19 @@ services:
       - WUD_WATCHER_LOCAL_SOCKET=/var/run/docker.sock
       - WUD_WATCHER_LOCAL_CRON=0 4 * * *  # Daily at 4:00 AM
       - WUD_WATCHER_LOCAL_WATCHBYDEFAULT=true
+      # Docker Compose Trigger - Auto-update containers  
+      - WUD_TRIGGER_DOCKERCOMPOSE_LOCAL_FILE=/compose/docker-compose.yml
+      - WUD_TRIGGER_DOCKERCOMPOSE_docLOCAL_PRUNE=true
+
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
       - ${CONFIG_ROOT}/wud:/store
+      - /home/river/riverdale_server:/compose:ro
     restart: unless-stopped
     networks:
       - riverdale_network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -248,6 +255,7 @@ services:
       - "traefik.http.routers.wud.rule=Host(`wud.river.local`)"
       - "traefik.http.routers.wud.entrypoints=web"
       - "traefik.http.services.wud.loadbalancer.server.port=3000"
+      - "wud.watch=true"
 
   # Dashy - Dashboard for all services
   dashy:
@@ -278,6 +286,7 @@ services:
       - "traefik.http.routers.dashy.rule=Host(`dashy.river.local`)"
       - "traefik.http.routers.dashy.entrypoints=web"
       - "traefik.http.services.dashy.loadbalancer.server.port=8080"
+      - "wud.watch=true"
 
   # Glances - System monitoring
   glances:
@@ -312,6 +321,7 @@ services:
       - "traefik.http.routers.glances.rule=Host(`glances.river.local`)"
       - "traefik.http.routers.glances.entrypoints=web"
       - "traefik.http.services.glances.loadbalancer.server.port=61208"
+      - "wud.watch=true"
 
   # Traefik - Reverse Proxy
   traefik:
@@ -356,6 +366,7 @@ services:
       - "traefik.http.routers.traefik.rule=Host(`traefik.river.local`)"
       - "traefik.http.routers.traefik.entrypoints=web"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "wud.watch=true"
 
   # whoami - Simple service for testing Traefik
   whoami:
