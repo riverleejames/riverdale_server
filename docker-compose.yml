@@ -1,53 +1,12 @@
 services:
-  # VPN Container - All torrent traffic goes through this
-  gluetun:
-    image: qmcgaw/gluetun:latest
-    container_name: gluetun
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    ports:
-      - "${TRANSMISSION_PORT}:9091"  # Transmission Web UI
-      - "51413:51413"                # Transmission torrent port
-      - "51413:51413/udp"            # Transmission torrent port UDP
-    volumes:
-      - ${CONFIG_ROOT}/gluetun:/gluetun
-    environment:
-      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
-      - VPN_TYPE=${VPN_TYPE}
-      # OpenVPN Configuration
-      - OPENVPN_USER=${OPENVPN_USER}
-      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
-      - OPENVPN_PROTOCOL=${OPENVPN_PROTOCOL:-udp}
-      - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
-      # Server location settings
-      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
-      # Network and firewall settings
-      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/16,172.16.0.0/12,10.0.0.0/8
-      - TZ=${TZ}
-      # Logging level
-      - LOG_LEVEL=info
-    restart: unless-stopped
-    networks:
-      - riverdale_network
-    healthcheck:
-      test: ["CMD", "ping", "-c", "1", "8.8.8.8"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    labels:
-      - "wud.watch=true"
-
-  # Transmission - Torrent client (runs through VPN)
+  # Transmission - Torrent client
   transmission:
     image: lscr.io/linuxserver/transmission:latest
     container_name: transmission
-    network_mode: "service:gluetun"  # Use gluetun's network (VPN)
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    ports:
+      - "${TRANSMISSION_PORT}:9091"
+      - "51413:51413"
+      - "51413:51413/udp"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -59,7 +18,13 @@ services:
       - ${DOWNLOADS_ROOT}:/downloads
       - ${DOWNLOADS_ROOT}/watch:/watch
     restart: unless-stopped
+    networks:
+      - riverdale_network
     labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.transmission.rule=Host(`transmission.river.local`)"
+      - "traefik.http.routers.transmission.entrypoints=web"
+      - "traefik.http.services.transmission.loadbalancer.server.port=9091"
       - "wud.watch=true"
 
 
@@ -68,8 +33,6 @@ services:
     image: jesec/flood:latest
     container_name: flood
     depends_on:
-      gluetun:
-        condition: service_healthy
       transmission:
         condition: service_started
     ports:
@@ -103,7 +66,7 @@ services:
       - "wud.watch=true"
       - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
-  # Plex - Media Server
+  # no- Media Server
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
