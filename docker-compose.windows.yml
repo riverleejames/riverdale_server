@@ -11,7 +11,7 @@ services:
       # Choose Windows version; defaults to 11 Pro. See README for alternatives.
       - VERSION=11
       # Resource allocations tuned for this host (6 cores, ~32GB RAM, >500GB free disk):
-      - RAM_SIZE=8G      # Adjust if you need more/less; keep enough for host and other services
+      - RAM_SIZE=16G      # Adjust if you need more/less; keep enough for host and other services
       - CPU_CORES=4      # Leaves 2 cores free for the host and other containers
       - DISK_SIZE=128G   # Default is 64G; 128G is a comfortable starting point
       # Optional: set credentials before first install
