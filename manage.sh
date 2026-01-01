@@ -1,6 +1,6 @@
 #!/bin/bash
 # Riverdale Server Management Script
-# Manages multiple docker-compose files easily
+# Manages multiple docker compose files easily
 
 set -e
 
@@ -66,7 +66,7 @@ EOF
 # Initialize directories
 init_directories() {
     print_header "Initializing Directories"
-    docker-compose -f docker-compose.init.yml up
+    docker compose -f docker-compose.init.yml up
     print_success "Directory initialization complete"
 }
 
@@ -75,24 +75,24 @@ start_service() {
     case $1 in
         main|"")
             print_header "Starting Main Services"
-            docker-compose up -d
+            docker compose up -d
             print_success "Main services started"
             ;;
         minecraft)
             print_header "Starting Minecraft Server"
-            docker-compose -f docker-compose.minecraft.yml up -d
+            docker compose -f docker-compose.minecraft.yml up -d
             print_success "Minecraft server started"
             ;;
         windows)
             print_header "Starting Windows VM"
-            docker-compose -f docker-compose.windows.yml up -d
+            docker compose -f docker-compose.windows.yml up -d
             print_success "Windows VM started"
             ;;
         all)
             print_header "Starting All Services"
-            docker-compose up -d
-            docker-compose -f docker-compose.minecraft.yml up -d
-            docker-compose -f docker-compose.windows.yml up -d
+            docker compose up -d
+            docker compose -f docker-compose.minecraft.yml up -d
+            docker compose -f docker-compose.windows.yml up -d
             print_success "All services started"
             ;;
         *)
@@ -107,25 +107,25 @@ stop_service() {
     case $1 in
         main|"")
             print_header "Stopping Main Services"
-            docker-compose down
+            docker compose down
             print_success "Main services stopped"
             ;;
         minecraft)
             print_header "Stopping Minecraft Server"
-            docker-compose -f docker-compose.minecraft.yml down
+            docker compose -f docker-compose.minecraft.yml down
             print_success "Minecraft server stopped"
             ;;
         windows)
             print_header "Stopping Windows VM"
             print_warning "Shutting down Windows VM (2 minute grace period)..."
-            docker-compose -f docker-compose.windows.yml down
+            docker compose -f docker-compose.windows.yml down
             print_success "Windows VM stopped"
             ;;
         all)
             print_header "Stopping All Services"
-            docker-compose down
-            docker-compose -f docker-compose.minecraft.yml down
-            docker-compose -f docker-compose.windows.yml down
+            docker compose down
+            docker compose -f docker-compose.minecraft.yml down
+            docker compose -f docker-compose.windows.yml down
             print_success "All services stopped"
             ;;
         *)
@@ -140,24 +140,24 @@ restart_service() {
     case $1 in
         main|"")
             print_header "Restarting Main Services"
-            docker-compose restart
+            docker compose restart
             print_success "Main services restarted"
             ;;
         minecraft)
             print_header "Restarting Minecraft Server"
-            docker-compose -f docker-compose.minecraft.yml restart
+            docker compose -f docker-compose.minecraft.yml restart
             print_success "Minecraft server restarted"
             ;;
         windows)
             print_header "Restarting Windows VM"
-            docker-compose -f docker-compose.windows.yml restart
+            docker compose -f docker-compose.windows.yml restart
             print_success "Windows VM restarted"
             ;;
         all)
             print_header "Restarting All Services"
-            docker-compose restart
-            docker-compose -f docker-compose.minecraft.yml restart
-            docker-compose -f docker-compose.windows.yml restart
+            docker compose restart
+            docker compose -f docker-compose.minecraft.yml restart
+            docker compose -f docker-compose.windows.yml restart
             print_success "All services restarted"
             ;;
         *)
@@ -172,21 +172,21 @@ view_logs() {
     case $1 in
         main|"")
             print_header "Viewing Main Service Logs"
-            docker-compose logs -f
+            docker compose logs -f
             ;;
         minecraft)
             print_header "Viewing Minecraft Logs"
-            docker-compose -f docker-compose.minecraft.yml logs -f
+            docker compose -f docker-compose.minecraft.yml logs -f
             ;;
         windows)
             print_header "Viewing Windows VM Logs"
-            docker-compose -f docker-compose.windows.yml logs -f
+            docker compose -f docker-compose.windows.yml logs -f
             ;;
         all)
             print_header "Viewing All Logs"
-            docker-compose logs -f &
-            docker-compose -f docker-compose.minecraft.yml logs -f &
-            docker-compose -f docker-compose.windows.yml logs -f
+            docker compose logs -f &
+            docker compose -f docker-compose.minecraft.yml logs -f &
+            docker compose -f docker-compose.windows.yml logs -f
             ;;
         *)
             print_error "Unknown service: $1"
@@ -218,32 +218,32 @@ update_service() {
     case $1 in
         main|"")
             print_header "Updating Main Services"
-            docker-compose pull
-            docker-compose up -d
+            docker compose pull
+            docker compose up -d
             print_success "Main services updated"
             ;;
         minecraft)
             print_header "Updating Minecraft Server"
-            docker-compose -f docker-compose.minecraft.yml pull
-            docker-compose -f docker-compose.minecraft.yml up -d
+            docker compose -f docker-compose.minecraft.yml pull
+            docker compose -f docker-compose.minecraft.yml up -d
             print_success "Minecraft server updated"
             ;;
         windows)
             print_header "Updating Windows VM"
-            docker-compose -f docker-compose.windows.yml pull
-            docker-compose -f docker-compose.windows.yml up -d
+            docker compose -f docker-compose.windows.yml pull
+            docker compose -f docker-compose.windows.yml up -d
             print_success "Windows VM updated"
             ;;
         all)
             print_header "Updating All Services"
-            docker-compose pull
-            docker-compose -f docker-compose.minecraft.yml pull
-            docker-compose -f docker-compose.windows.yml pull
+            docker compose pull
+            docker compose -f docker-compose.minecraft.yml pull
+            docker compose -f docker-compose.windows.yml pull
             print_success "All images pulled"
             
-            docker-compose up -d
-            docker-compose -f docker-compose.minecraft.yml up -d
-            docker-compose -f docker-compose.windows.yml up -d
+            docker compose up -d
+            docker compose -f docker-compose.minecraft.yml up -d
+            docker compose -f docker-compose.windows.yml up -d
             print_success "All services updated"
             ;;
         *)
