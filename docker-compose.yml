@@ -15,8 +15,7 @@ services:
       - PASS=${PASSWORD}
     volumes:
       - ${CONFIG_ROOT}/transmission:/config
-      - ${DOWNLOADS_ROOT}:/downloads
-      - ${DOWNLOADS_ROOT}/watch:/watch
+      - ${DATA_ROOT}:/data
     restart: unless-stopped
     networks:
       - riverdale_network
@@ -43,11 +42,11 @@ services:
       - TZ=${TZ}
       - FLOOD_OPTION_HOST=0.0.0.0
       - FLOOD_OPTION_PORT=3000
-      - FLOOD_OPTION_ALLOWEDPATH=${DOWNLOADS_ROOT}
-      - FLOOD_OPTION_RUNDIR=/data
+      - FLOOD_OPTION_ALLOWEDPATH=/data
+      - FLOOD_OPTION_RUNDIR=/config
     volumes:
-      - ${CONFIG_ROOT}/flood:/data
-      - ${DOWNLOADS_ROOT}:/downloads
+      - ${CONFIG_ROOT}/flood:/config
+      - ${DATA_ROOT}:/data
     user: "${PUID}:${PGID}"
     restart: unless-stopped
     networks:
@@ -79,7 +78,7 @@ services:
       - PLEX_CLAIM=${PLEX_CLAIM:-}
     volumes:
       - ${CONFIG_ROOT}/plex:/config
-      - ${MEDIA_ROOT}:/media:ro
+      - ${DATA_ROOT}/media:/data/media:ro
       - /dev/shm:/transcode
     devices:
       - /dev/dri:/dev/dri
@@ -106,8 +105,7 @@ services:
       - TZ=${TZ}
     volumes:
       - ${CONFIG_ROOT}/sonarr:/config
-      - ${MEDIA_ROOT}/tv:/tv
-      - ${DOWNLOADS_ROOT}:/downloads
+      - ${DATA_ROOT}:/data
     restart: unless-stopped
     networks:
       - riverdale_network
@@ -137,8 +135,7 @@ services:
       - TZ=${TZ}
     volumes:
       - ${CONFIG_ROOT}/radarr:/config
-      - ${MEDIA_ROOT}/movies:/movies
-      - ${DOWNLOADS_ROOT}:/downloads
+      - ${DATA_ROOT}:/data
     restart: unless-stopped
     networks:
       - riverdale_network
@@ -218,37 +215,6 @@ services:
       - "traefik.http.routers.wud.rule=Host(`wud.river.local`)"
       - "traefik.http.routers.wud.entrypoints=web"
       - "traefik.http.services.wud.loadbalancer.server.port=3000"
-      - "wud.watch=true"
-
-  # Dashy - Dashboard for all services
-  dashy:
-    image: lissy93/dashy:latest
-    container_name: dashy
-    ports:
-      - "${DASHY_PORT:-4000}:8080"  # Changed from port 80 to 4000 to avoid conflict with Traefik
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - NODE_ENV=production
-      - UID=${PUID}
-      - GID=${PGID}
-    volumes:
-      - ${CONFIG_ROOT}/dashy:/app/user-data
-    restart: unless-stopped
-    networks:
-      - riverdale_network
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dashy.rule=Host(`dashy.river.local`)"
-      - "traefik.http.routers.dashy.entrypoints=web"
-      - "traefik.http.services.dashy.loadbalancer.server.port=8080"
       - "wud.watch=true"
 
   # Glances - System monitoring
