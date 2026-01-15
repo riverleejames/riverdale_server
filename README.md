@@ -217,16 +217,19 @@ YOUR_SERVER_IP    wud.river.local
 Use the included management script for easy setup:
 
 1. **Initialize directories** (first time only):
+
    ```bash
    ./manage.sh init
    ```
 
 2. **Start main media server**:
+
    ```bash
    docker compose up -d
    ```
 
 3. **Check status**:
+
    ```bash
    docker compose ps
    ```
@@ -248,16 +251,16 @@ docker compose pull               # Update images
 
 After starting services, wait 2-3 minutes for health checks, then access:
 
-- **Dashboard**: http://dashy.river.local (or http://localhost:4000)
-- **Media Server**: http://plex.river.local (or http://localhost:32400/web)
-- **Torrents**: http://flood.river.local (or http://localhost:3000)
-- **Monitoring**: http://beszel.river.local (or http://localhost:8090)
+- **Dashboard**: <http://dashy.river.local> (or <http://localhost:4000>)
+- **Media Server**: <http://plex.river.local> (or <http://localhost:32400/web>)
+- **Torrents**: <http://flood.river.local> (or <http://localhost:3000>)
+- **Monitoring**: <http://beszel.river.local> (or <http://localhost:8090>)
 
 ## 📱 Initial Service Configuration
 
 ### 1. Flood (Torrent UI)
 
-Access http://flood.river.local and configure:
+Access <http://flood.river.local> and configure:
 
 - **Client Type**: Transmission
 - **Hostname**: `transmission`
@@ -268,27 +271,27 @@ Access http://flood.river.local and configure:
 
 ### 2. Prowlarr (Indexer Management)
 
-1. Access http://prowlarr.river.local
+1. Access <http://prowlarr.river.local>
 2. Add your torrent indexers
 3. Connect to Sonarr and Radarr (will auto-detect on network)
 
 ### 3. Sonarr (TV Shows)
 
-1. Access http://sonarr.river.local
+1. Access <http://sonarr.river.local>
 2. Settings → Download Clients → Add Transmission
 3. Host: `transmission`, Port: `9091`
 4. Add root folder: `/tv`
 
 ### 4. Radarr (Movies)
 
-1. Access http://radarr.river.local
+1. Access <http://radarr.river.local>
 2. Settings → Download Clients → Add Transmission
 3. Host: `transmission`, Port: `9091`
 4. Add root folder: `/movies`
 
 ### 5. Plex (Media Server)
 
-1. Access http://plex.river.local or http://localhost:32400/web
+1. Access <http://plex.river.local> or <http://localhost:32400/web>
 2. Sign in with your Plex account
 3. Complete initial setup wizard
 4. Add media libraries:
@@ -298,7 +301,7 @@ Access http://flood.river.local and configure:
 
 ### 6. Beszel (System Monitoring)
 
-1. Access http://beszel.river.local or http://localhost:8090
+1. Access <http://beszel.river.local> or <http://localhost:8090>
 2. Complete initial setup
 3. The agent is automatically connected and monitoring system resources
 
@@ -347,12 +350,12 @@ docker compose pull            # Pull latest images
 ## 🎬 Initial Setup Workflow
 
 1. **Start services**: `docker compose up -d`
-2. **Setup Dashy Dashboard**: Access http://dashy.river.local and configure service tiles
-3. **Configure Prowlarr**: Add torrent indexers at http://prowlarr.river.local
-4. **Setup Sonarr**: Configure quality profiles and connect to Prowlarr at http://sonarr.river.local
-5. **Setup Radarr**: Configure quality profiles and connect to Prowlarr at http://radarr.river.local
-6. **Configure Transmission**: Set download directories and preferences at http://transmission.river.local:9091
-7. **Setup Plex**: Add media libraries and claim server at http://plex.river.local
+2. **Setup Dashy Dashboard**: Access <http://dashy.river.local> and configure service tiles
+3. **Configure Prowlarr**: Add torrent indexers at <http://prowlarr.river.local>
+4. **Setup Sonarr**: Configure quality profiles and connect to Prowlarr at <http://sonarr.river.local>
+5. **Setup Radarr**: Configure quality profiles and connect to Prowlarr at <http://radarr.river.local>
+6. **Configure Transmission**: Set download directories and preferences at <http://transmission.river.local:9091>
+7. **Setup Plex**: Add media libraries and claim server at <http://plex.river.local>
 
 ## �️ Dashy Dashboard Configuration
 
@@ -444,6 +447,7 @@ docker exec flood curl http://transmission:9091
 ```
 
 **Common fixes:**
+
 - Verify credentials match in Flood and `.env`
 - Hostname in Flood configuration must be `transmission`
 - Ensure both containers are on the same network
@@ -462,6 +466,7 @@ docker compose logs -f
 ```
 
 **Common fixes:**
+
 - Wait for health checks (some services take 2-3 minutes)
 - Check PUID/PGID permissions
 - Ensure required directories exist and are writable
@@ -496,6 +501,7 @@ echo $PLEX_CLAIM
 ```
 
 **Common fixes:**
+
 - Ensure Plex claim token is valid (get new one from plex.tv/claim)
 - Verify `/dev/dri` devices are accessible
 - Check media directories are properly mounted
@@ -512,6 +518,7 @@ docker inspect [container_name] | grep -A 10 Health
 ```
 
 **Common fixes:**
+
 - Wait longer (some services need 5+ minutes on first start)
 - Check service-specific logs for errors
 - Restart individual service: `docker-compose restart [service]`
@@ -653,16 +660,16 @@ docker inspect plex | grep -A 20 Health
 
 ## 📚 Additional Resources
 
-- **Plex Docs**: https://support.plex.tv/
-- **Flood UI**: https://github.com/jesec/flood
-- **Sonarr Wiki**: https://wiki.servarr.com/sonarr
-- **Radarr Wiki**: https://wiki.servarr.com/radarr
-- **Prowlarr Wiki**: https://wiki.servarr.com/prowlarr
-- **Traefik Docs**: https://doc.traefik.io/traefik/
-- **WUD Docs**: https://getwud.github.io/wud/
-- **Beszel Docs**: https://github.com/henrygd/beszel
-- **Transmission**: https://transmissionbt.com/
-- **Dashy**: https://dashy.to/
+- **Plex Docs**: <https://support.plex.tv/>
+- **Flood UI**: <https://github.com/jesec/flood>
+- **Sonarr Wiki**: <https://wiki.servarr.com/sonarr>
+- **Radarr Wiki**: <https://wiki.servarr.com/radarr>
+- **Prowlarr Wiki**: <https://wiki.servarr.com/prowlarr>
+- **Traefik Docs**: <https://doc.traefik.io/traefik/>
+- **WUD Docs**: <https://getwud.github.io/wud/>
+- **Beszel Docs**: <https://github.com/henrygd/beszel>
+- **Transmission**: <https://transmissionbt.com/>
+- **Dashy**: <https://dashy.to/>
 
 ## 📄 License
 
