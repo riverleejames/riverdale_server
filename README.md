@@ -120,7 +120,7 @@ Data Storage (configured in `.env`):
 
 ## 🌐 Network Architecture
 
-```
+```text
 Internet
     ↓
 Router
