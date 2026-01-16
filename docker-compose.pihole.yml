@@ -1,0 +1,50 @@
+services:
+  # Pi-hole - Network-wide ad blocking and local DNS
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    ports:
+      - "53:53/tcp"      # DNS TCP
+      - "53:53/udp"      # DNS UDP
+      - "8053:8053/tcp"  # Web UI (HTTP) on custom port
+    environment:
+      - TZ=${TZ}
+      - FTLCONF_webserver_api_password=${PIHOLE_PASSWORD}
+      - FTLCONF_dns_listeningMode=ALL
+      # Custom web port (HTTP). Suffix `o` = HTTP
+      - FTLCONF_webserver_port=8053o,[::]:8053o
+      - FTLCONF_dns_upstreams=8.8.8.8;8.8.4.4
+    volumes:
+      - ${CONFIG_ROOT}/pihole:/etc/pihole
+      - ${CONFIG_ROOT}/pihole-dnsmasq.d:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "dig @127.0.0.1 pi.hole +short || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pihole.rule=Host(`pihole.lan`)"
+      - "traefik.http.routers.pihole.entrypoints=web"
+      - "traefik.http.services.pihole.loadbalancer.server.port=8053"
+
+      # Redirect bare host -> /admin
+      - "traefik.http.routers.pihole.middlewares=pihole-admin"
+      - "traefik.http.middlewares.pihole-admin.redirectregex.regex=^http://pihole\\.lan/?$"
+      - "traefik.http.middlewares.pihole-admin.redirectregex.replacement=http://pihole.lan/admin"
+
+      - "wud.watch=true"
+
+networks:
+  riverdale_network:
+    name: riverdale_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
