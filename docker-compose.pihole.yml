@@ -13,7 +13,7 @@ services:
       - FTLCONF_dns_listeningMode=ALL
       # Custom web port (HTTP). Suffix `o` = HTTP
       - FTLCONF_webserver_port=8053o,[::]:8053o
-      - FTLCONF_dns_upstreams=8.8.8.8;8.8.4.4
+      - FTLCONF_dns_upstreams=208.67.222.123;208.67.220.123
     volumes:
       - ${CONFIG_ROOT}/pihole:/etc/pihole
       - ${CONFIG_ROOT}/pihole-dnsmasq.d:/etc/dnsmasq.d
