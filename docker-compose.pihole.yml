@@ -4,8 +4,8 @@ services:
     image: pihole/pihole:latest
     container_name: pihole
     ports:
-      - "53:53/tcp"      # DNS TCP
-      - "53:53/udp"      # DNS UDP
+      - "${LAN_IP}:53:53/tcp"      # DNS TCP
+      - "${LAN_IP}:53:53/udp"      # DNS UDP
       - "8053:8053/tcp"  # Web UI (HTTP) on custom port
     environment:
       - TZ=${TZ}
@@ -13,7 +13,10 @@ services:
       - FTLCONF_dns_listeningMode=ALL
       # Custom web port (HTTP). Suffix `o` = HTTP
       - FTLCONF_webserver_port=8053o,[::]:8053o
-      - FTLCONF_dns_upstreams=208.67.222.123;208.67.220.123
+    # Avoid inheriting the host's systemd-resolved stub (127.0.0.53) inside the container.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       - ${CONFIG_ROOT}/pihole:/etc/pihole
       - ${CONFIG_ROOT}/pihole-dnsmasq.d:/etc/dnsmasq.d
