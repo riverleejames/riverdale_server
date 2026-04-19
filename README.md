@@ -6,7 +6,6 @@ A complete media server stack with automated downloading, streaming capabilities
 
 This setup provides a full-featured media server with the following capabilities:
 
-- **Network-wide Ad Blocking** with Pi-hole (Isolated Stack)
 - **Modern torrent UI** with Flood
 - **Automated TV show management** with Sonarr
 - **Automated movie management** with Radarr
@@ -21,26 +20,23 @@ This setup provides a full-featured media server with the following capabilities
 ```text
 riverdale_server/
 ├── docker-compose.yml              # Main media server stack (Apps)
-├── docker-compose.pihole.yml       # Dedicated Network & DNS stack (Pi-hole)
 ├── docker-compose.init.yml         # Init script for directories & permissions
 ├── .env                           # Environment variables
 ├── .env.example                   # Example environment file
-├── scripts/                       # Utility scripts
 └── README.md                      # This file
 ```
 
 ## 🌐 Network Access
 
-All services are accessible via clean domain names through Traefik reverse proxy.
+Most services are accessible via clean domain names through Traefik reverse proxy.
 
 **Note:** We use `.lan` domains (instead of `.local`) to avoid mDNS conflicts.
+**Note:** Plex runs in host mode and is accessed directly (not through Traefik).
 
 ### Main Services (via Traefik - Port 80)
 
 | Service | Domain | Description |
 | :--- | :--- | :--- |
-| **Pi-hole** | `pihole.lan` | Ad blocking & Local DNS Admin |
-| **Plex** | `plex.river.local` | Media streaming (or direct via IP) |
 | **Flood** | `flood.lan` | Modern torrent UI |
 | **Sonarr** | `sonarr.lan` | TV show management |
 | **Radarr** | `radarr.lan` | Movie management |
@@ -54,7 +50,6 @@ All services are accessible via clean domain names through Traefik reverse proxy
 
 | Service | URL | Port | Notes |
 | :--- | :--- | :--- | :--- |
-| **Pi-hole** | `http://localhost:8053` | 8053 | DNS Admin |
 | **Plex** | `http://localhost:32400/web` | 32400 | Media streaming |
 | **Flood** | `http://localhost:3000` | 3000 | Torrent UI |
 | **Transmission** | `http://localhost:9091` | 9091 | Torrent client |
@@ -66,10 +61,6 @@ All services are accessible via clean domain names through Traefik reverse proxy
 | **WUD** | `http://localhost:3100` | 3100 | Update monitoring |
 
 ## 📋 Service Details
-
-### Network Stack (`docker-compose.pihole.yml`)
-
-- **Pi-hole**: DNS sinkhole and DHCP server. It manages the `riverdale_network` to ensure DNS stays up even if the main application stack is restarted.
 
 ### Main Media Server Stack (`docker-compose.yml`)
 
@@ -95,7 +86,6 @@ Data Storage (configured in `.env`):
 
 ```text
 ├── /mnt/media-storage/config/     # Application configurations
-│   ├── pihole/
 │   ├── plex/
 │   ├── sonarr/
 │   ├── radarr/
@@ -131,14 +121,12 @@ Traefik Reverse Proxy (Port 80) - *.lan domains
     ↓
 ┌─────────────────────────────────────────────────────────┐
 │         Docker Network (riverdale_network)              │
-│         Managed by: docker-compose.pihole.yml           │
 │         Subnet: 172.19.0.0/16                           │
 │                                                         │
-│  ┌──────────────┐     ┌─────────────────────────────┐   │
-│  │  Net Stack   │     │   Media Services            │   │
-│  │  Pi-hole     │ ──► │   Plex, Transmission,       │   │
-│  │              │     │   Flood, Sonarr, Radarr...  │   │
-│  └──────────────┘     └─────────────────────────────┘   │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │   Media Services                                  │   │
+│  │   Plex, Transmission, Flood, Sonarr, Radarr...   │   │
+│  └───────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -178,20 +166,17 @@ PASSWORD=your_password
 
 # Plex Configuration
 PLEX_CLAIM=claim-your-token-here
-
-# Pi-hole
-PIHOLE_PASSWORD=your_dns_password
 ```
 
 ### DNS Configuration
 
-To use the `.lan` domains, you must use Pi-hole as your DNS server.
+To use the `.lan` domains, configure your DNS server to resolve local hostnames to your media server IP.
 
-1. **Configure Client**: Set your computer's DNS to the server's IP address.
-2. **Add Records**: In Pi-hole Admin (`http://<IP>:8053/admin`) -> **Local DNS** -> **DNS Records**:
-    - `pihole.lan` -> `<Server IP>`
+1. **Configure Client**: Set your computer/router DNS to a resolver you control (router DNS, AdGuard Home, Unbound, etc.).
+2. **Add Records**: Create local DNS records for your services:
     - `sonarr.lan` -> `<Server IP>`
     - `radarr.lan` -> `<Server IP>`
+    - `flood.lan` -> `<Server IP>`
     - ... etc
 
 ## 🚀 Getting Started
@@ -204,13 +189,7 @@ To use the `.lan` domains, you must use Pi-hole as your DNS server.
    docker compose -f docker-compose.init.yml up
    ```
 
-2. **Start Network/DNS Stack** (Pi-hole must run first):
-
-   ```bash
-   docker compose -f docker-compose.pihole.yml up -d
-   ```
-
-3. **Start Main Media Server**:
+2. **Start Main Media Server**:
 
    ```bash
    docker compose up -d
@@ -220,7 +199,7 @@ To use the `.lan` domains, you must use Pi-hole as your DNS server.
 
 ```bash
 docker compose up -d              # Start main services
-docker compose down               # Stop main services (Pi-hole stays up)
+docker compose down               # Stop main services
 docker compose logs -f [service]  # View logs
 ```
 
@@ -282,9 +261,11 @@ docker exec flood curl http://transmission:9091
 
 If `.lan` domains don't work:
 
-1. Ensure you are using the Pi-hole IP as your DNS.
-2. Ensure you added the Local DNS records in Pi-hole.
+1. Ensure your DNS resolver has local records for your `.lan` domains.
+2. Ensure clients are actually using that resolver.
 3. Try `nslookup sonarr.lan <Server-IP>` to verify resolution.
+
+If Plex is reachable by IP/localhost but not by hostname, that is expected unless you create a separate DNS record for Plex and route it independently.
 
 ### Glances or Web Interface Redirects to Google Search
 

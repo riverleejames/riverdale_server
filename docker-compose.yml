@@ -65,7 +65,7 @@ services:
       - "wud.watch=true"
       - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
-  # no- Media Server
+  # Plex - Media Server
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex

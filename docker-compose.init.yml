@@ -1,5 +1,5 @@
 # Docker Compose file for initial directory setup
-# Run this ONCE before starting main services: docker-compose -f docker-compose.init.yml up
+# Run this ONCE before starting main services: docker compose -f docker-compose.init.yml up
 # This creates all required directories with proper permissions
 
 services:
@@ -25,7 +25,6 @@ services:
         mkdir -p /downloads/watch
         # Creating config directories
         mkdir -p /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/flood
-        mkdir -p /config/pihole /config/pihole-dnsmasq.d
         mkdir -p /config/wud /config/dashy /config/traefik /config/glances
         echo 'Setting proper ownership and permissions...'
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
@@ -38,14 +37,8 @@ services:
         echo '✅ Directory structure ready!'
         echo ''
         echo 'You can now start the main services with:'
-        echo '  docker-compose up -d'
+        echo '  docker compose up -d'
         echo ''
       "
     user: "0:0"  # Run as root to ensure directory creation works
     restart: "no"
-
-networks:
-  riverdale_network:
-    name: riverdale_network
-    driver: bridge
-    external: true  # Use existing network
