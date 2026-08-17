@@ -227,6 +227,58 @@ services:
     labels:
       - "wud.watch=true"
 
+  # Maintainerr - Automatic library cleanup based on Plex watch status
+  maintainerr:
+    image: ghcr.io/maintainerr/maintainerr:latest
+    container_name: maintainerr
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/maintainerr:/opt/data
+      - ${MEDIA_ROOT}:/data/media
+    ports:
+      - "${MAINTAINERR_PORT:-6246}:6246"
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD", "/opt/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.maintainerr.rule=Host(`maintainerr.lan`)"
+      - "traefik.http.routers.maintainerr.entrypoints=web"
+      - "traefik.http.services.maintainerr.loadbalancer.server.port=6246"
+      - "wud.watch=true"
+
+  # Boxarr - Automatically tracks weekly box office top 10 and adds them to Radarr
+  boxarr:
+    image: ghcr.io/iongpt/boxarr:latest
+    container_name: boxarr
+    volumes:
+      - ${CONFIG_ROOT}/boxarr:/config
+    ports:
+      - "${BOXARR_PORT:-8888}:8888"
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.boxarr.rule=Host(`boxarr.lan`)"
+      - "traefik.http.routers.boxarr.entrypoints=web"
+      - "traefik.http.services.boxarr.loadbalancer.server.port=8888"
+      - "wud.watch=true"
+
   # WUD (What's Up Docker) - Container update monitoring
   wud:
     image: getwud/wud:latest
