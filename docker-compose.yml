@@ -182,6 +182,51 @@ services:
       - "wud.watch=true"
       - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
+  # Seerr - Media request management (successor to Overseerr/Jellyseerr)
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    ports:
+      - "${SEERR_PORT:-5055}:5055"
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/seerr:/app/config
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:5055/api/v1/settings/public || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.seerr.rule=Host(`seerr.lan`)"
+      - "traefik.http.routers.seerr.entrypoints=web"
+      - "traefik.http.services.seerr.loadbalancer.server.port=5055"
+      - "wud.watch=true"
+
+  # Telegram Request Bot - Request movies/TV via Telegram (talks to Seerr's API)
+  telegram-bot:
+    image: chimpanzeesweetrolls/overseerrrequestviatelegrambot:latest
+    container_name: telegram-bot
+    environment:
+      - OVERSEERR_API_URL=http://seerr:5055/api/v1
+      - OVERSEERR_API_KEY=${SEERR_API_KEY}
+      - TELEGRAM_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - PASSWORD=${TELEGRAM_BOT_PASSWORD}
+    volumes:
+      - ${CONFIG_ROOT}/telegram-bot:/app/data
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    labels:
+      - "wud.watch=true"
+
   # WUD (What's Up Docker) - Container update monitoring
   wud:
     image: getwud/wud:latest

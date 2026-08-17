@@ -25,7 +25,7 @@ services:
         mkdir -p /downloads/watch
         # Creating config directories
         mkdir -p /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/flood
-        mkdir -p /config/wud /config/dashy /config/traefik /config/glances
+        mkdir -p /config/wud /config/seerr /config/telegram-bot /config/traefik /config/glances
         echo 'Setting proper ownership and permissions...'
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
