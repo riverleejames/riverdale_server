@@ -182,6 +182,17 @@ services:
       - "wud.watch=true"
       - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
+  # Byparr - Cloudflare challenge solver, used as a Prowlarr indexer proxy
+  byparr:
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: byparr
+    environment:
+      - TZ=${TZ}
+    shm_size: 1gb
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+
   # Seerr - Media request management (successor to Overseerr/Jellyseerr)
   seerr:
     image: ghcr.io/seerr-team/seerr:latest
