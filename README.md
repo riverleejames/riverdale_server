@@ -16,6 +16,8 @@ This setup provides a full-featured media server with the following capabilities
 - **Container update monitoring** with WUD (What's Up Docker)
 - **Unified dashboard** with Homarr
 - **Push notifications** with ntfy (Sonarr, Radarr, Prowlarr, Maintainerr, WUD)
+- **Automatic subtitles** with Bazarr
+- **Automated quality profile/custom format sync** with Recyclarr (TRaSH Guides)
 
 ## 📁 Project Structure
 
@@ -48,6 +50,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **WUD** | `wud.lan` | Container update monitoring |
 | **Homarr** | `homarr.lan` | Unified services dashboard |
 | **ntfy** | `ntfy.lan` | Push notifications |
+| **Bazarr** | `bazarr.lan` | Subtitle management |
 | **Whoami** | `whoami.lan` | Traefik routing test |
 
 ### Direct Port Access
@@ -65,6 +68,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **WUD** | `http://localhost:3100` | 3100 | Update monitoring |
 | **Homarr** | `http://localhost:7575` | 7575 | Services dashboard |
 | **ntfy** | `http://localhost:8090` | 8090 | Push notifications |
+| **Bazarr** | `http://localhost:6767` | 6767 | Subtitle management |
 
 ## 📋 Service Details
 
@@ -81,6 +85,8 @@ Most services are accessible via clean domain names through Traefik reverse prox
 - **WUD** (3100): Container update monitoring with web UI
 - **Homarr** (7575): Unified dashboard for all services
 - **ntfy** (8090): Self-hosted push notifications, wired into Sonarr, Radarr, Prowlarr, Maintainerr and WUD
+- **Bazarr** (6767): Automatic subtitle downloads for Sonarr/Radarr
+- **Recyclarr**: No web UI. Headless container that syncs TRaSH Guides custom formats and quality-size definitions into Sonarr/Radarr on a daily schedule
 
 ## 🔧 Prerequisites
 
@@ -104,7 +110,9 @@ Data Storage (configured in `.env`):
 │   ├── glances/
 │   ├── wud/
 │   ├── homarr/
-│   └── ntfy/
+│   ├── ntfy/
+│   ├── bazarr/
+│   └── recyclarr/
 ├── /mnt/media-storage/downloads/  # Download staging
 │   ├── complete/
 │   │   ├── movies/
@@ -277,6 +285,37 @@ To get these on your phone:
 
 - **Seerr**: Settings → Notifications → ntfy.sh. Server URL: `http://ntfy:80`, pick a topic (e.g. `riverdale-seerr`), enable the request/availability events you want.
 - **Homarr**: Settings → Integrations → Add integration → Ntfy. URL: `http://ntfy:80`, Topic: whichever topic(s) you want visible on the dashboard. Then add the **Notifications** widget to a board and point it at that integration to see history alongside your other widgets (this is a dashboard view, separate from the phone push above).
+
+### 7. Bazarr (Subtitles)
+
+Already connected to Sonarr and Radarr, with an English language profile created and assigned to every existing series/movie, so anything already in your library will start picking up subtitles automatically.
+
+**One manual step left**: no subtitle provider is enabled yet, so searches currently find nothing. Access <http://bazarr.lan> → Settings → Providers → add one or more. Most people use **OpenSubtitles.com** (free account required, best coverage); a no-signup option like **Podnapisi** also works but with less reliable English coverage.
+
+### 8. Recyclarr (Quality Profile Automation)
+
+Runs automatically once a day (no setup needed) and keeps two things in sync from the [TRaSH Guides](https://trash-guides.info/) for both Sonarr and Radarr's `Any` profile:
+
+- **Custom formats**: rejects junk releases (BR-DISK, upscaled, low-quality release groups/titles, 3D, extras) with a -10000 score, same pattern as the pre-existing "Reject - Executable Bait" format.
+- **Quality size limits**: keeps the min/max file size per quality tier (e.g. 2160p) aligned with TRaSH's curated values, so raising a resolution cap never means an unbounded/"massive" file can be grabbed.
+
+Config lives at `${CONFIG_ROOT}/recyclarr/recyclarr.yml`. To change what it manages (e.g. add more custom formats, or target a different profile), edit that file — it takes effect on the next scheduled sync, or immediately with:
+
+```bash
+docker exec recyclarr recyclarr sync --preview   # see what would change first
+docker exec recyclarr recyclarr sync              # apply
+```
+
+**Note on 4K**: as part of setting this up, the `Any` quality profile on both Sonarr and Radarr was changed to allow 2160p WEB/Bluray (previously blocked entirely on Sonarr; Radarr already allowed WEB-2160p). Remux is intentionally left disabled on both (too large), and every 2160p tier has a real max-size cap so a single episode/movie can't balloon past a few GB.
+
+### 9. Maintainerr (Watched-Content Cleanup)
+
+Beyond the original "delete watched movies / seasons after 7 days" rules, two changes were made:
+
+- **Episode-level cleanup**: TV cleanup now happens per-episode instead of waiting for a whole season to be watched (the old "Watched TV Seasons" rule is disabled, not deleted, in case you want to revert).
+- **Emergency low-disk cleanup**: two additional rule groups (`Emergency Low Disk Cleanup - Movies` / `- TV Episodes`) skip the normal 7-day grace period entirely for already-watched content once the media disk drops below 50GB free, deleting it immediately instead. They do nothing while disk space is healthy.
+
+All of this is configured through Maintainerr's own database (Settings → Rules in the UI), not through files in this repo.
 
 ## 🚨 Troubleshooting
 
