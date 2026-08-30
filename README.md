@@ -14,6 +14,8 @@ This setup provides a full-featured media server with the following capabilities
 - **Reverse proxy** with Traefik for clean domain access
 - **System monitoring** with Glances
 - **Container update monitoring** with WUD (What's Up Docker)
+- **Unified dashboard** with Homarr
+- **Push notifications** with ntfy (Sonarr, Radarr, Prowlarr, Maintainerr, WUD)
 
 ## 📁 Project Structure
 
@@ -44,6 +46,8 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **Glances** | `glances.lan` | System monitoring |
 | **Traefik** | `traefik.lan` | Reverse proxy dashboard |
 | **WUD** | `wud.lan` | Container update monitoring |
+| **Homarr** | `homarr.lan` | Unified services dashboard |
+| **ntfy** | `ntfy.lan` | Push notifications |
 | **Whoami** | `whoami.lan` | Traefik routing test |
 
 ### Direct Port Access
@@ -59,6 +63,8 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **Glances** | `http://localhost:61208` | 61208 | System monitoring |
 | **Traefik** | `http://localhost:8080` | 8080 | Proxy dashboard |
 | **WUD** | `http://localhost:3100` | 3100 | Update monitoring |
+| **Homarr** | `http://localhost:7575` | 7575 | Services dashboard |
+| **ntfy** | `http://localhost:8090` | 8090 | Push notifications |
 
 ## 📋 Service Details
 
@@ -73,6 +79,8 @@ Most services are accessible via clean domain names through Traefik reverse prox
 - **Traefik** (80/8080): Reverse proxy for clean domain access
 - **Glances** (61208): Real-time system monitoring
 - **WUD** (3100): Container update monitoring with web UI
+- **Homarr** (7575): Unified dashboard for all services
+- **ntfy** (8090): Self-hosted push notifications, wired into Sonarr, Radarr, Prowlarr, Maintainerr and WUD
 
 ## 🔧 Prerequisites
 
@@ -94,7 +102,9 @@ Data Storage (configured in `.env`):
 │   ├── flood/
 │   ├── traefik/
 │   ├── glances/
-│   └── wud/
+│   ├── wud/
+│   ├── homarr/
+│   └── ntfy/
 ├── /mnt/media-storage/downloads/  # Download staging
 │   ├── complete/
 │   │   ├── movies/
@@ -244,6 +254,29 @@ Access <http://flood.lan> and configure:
 4. Add media libraries:
    - Movies: `/media/movies`
    - TV Shows: `/media/tv`
+
+### 6. ntfy (Push Notifications)
+
+Self-hosted at `http://ntfy.lan` (no auth by default, LAN-only). Sonarr, Radarr, Prowlarr, Maintainerr and WUD are already wired up to publish to it, each on its own topic:
+
+| Service | Topic | Fires on |
+| :--- | :--- | :--- |
+| Sonarr | `riverdale-sonarr` | Download/upgrade complete, health issues, app updates, manual intervention needed |
+| Radarr | `riverdale-radarr` | Same as Sonarr |
+| Prowlarr | `riverdale-prowlarr` | Indexer health issues, app updates |
+| Maintainerr | `riverdale-maintainerr` | Rule/collection handling failures, update available |
+| WUD | `riverdale-updates` | A container has an image update available |
+
+To get these on your phone:
+
+1. Install the **ntfy** app ([Android](https://play.google.com/store/apps/details?id=io.heckel.ntfy) / [iOS](https://apps.apple.com/us/app/ntfy/id1625396347)).
+2. In the app, set **Settings → Default server** to `http://ntfy.lan` (or `http://<Server-IP>:8090`).
+3. Subscribe to each topic above you want alerts for (add one subscription per topic). Only works while your phone can reach the server (same LAN, or a VPN back into it — there's no port-forwarding/remote access configured for it here).
+
+**Seerr and Homarr also support ntfy, but need a one-time UI step** (their settings pages require a logged-in admin session, not just an API key, so they can't be scripted):
+
+- **Seerr**: Settings → Notifications → ntfy.sh. Server URL: `http://ntfy:80`, pick a topic (e.g. `riverdale-seerr`), enable the request/availability events you want.
+- **Homarr**: Settings → Integrations → Add integration → Ntfy. URL: `http://ntfy:80`, Topic: whichever topic(s) you want visible on the dashboard. Then add the **Notifications** widget to a board and point it at that integration to see history alongside your other widgets (this is a dashboard view, separate from the phone push above).
 
 ## 🚨 Troubleshooting
 
