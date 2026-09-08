@@ -83,7 +83,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 - **Traefik** (80/8080): Reverse proxy for clean domain access
 - **Glances** (61208): Real-time system monitoring
 - **WUD** (3100): Container update monitoring with web UI
-- **Homarr** (7575): Unified dashboard for all services
+- **Homarr** (7575): Unified dashboard for all services (V2 public beta image `homarr-test:v2`; Workshop via `WORKSHOP_API_URL`)
 - **ntfy** (8090): Self-hosted push notifications, wired into Sonarr, Radarr, Prowlarr, Maintainerr and WUD
 - **Bazarr** (6767): Automatic subtitle downloads for Sonarr/Radarr
 - **Recyclarr**: No web UI. Headless container that syncs TRaSH Guides custom formats and quality-size definitions into Sonarr/Radarr on a daily schedule

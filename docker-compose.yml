@@ -409,14 +409,15 @@ services:
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
       - "wud.watch=true"
 
-  # Homarr - Unified dashboard for all services
+  # Homarr - Unified dashboard for all services (V2 public beta)
   homarr:
-    image: ghcr.io/homarr-labs/homarr:latest
+    image: ghcr.io/homarr-labs/homarr-test:v2
     container_name: homarr
     environment:
       - TZ=${TZ}
       - SECRET_ENCRYPTION_KEY=${HOMARR_SECRET_ENCRYPTION_KEY}
       - ENABLE_DOCKER=true
+      - WORKSHOP_API_URL=https://v2.preview.homarr.dev/
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CONFIG_ROOT}/homarr:/appdata
