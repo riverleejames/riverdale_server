@@ -527,6 +527,9 @@ services:
       - riverdale_network
     volumes:
       - ${CONFIG_ROOT}/paperless/redis:/data
+    labels:
+      # WUD semver watch upgrades 9-alpine -> 9-trixie; pin compose tags
+      - "wud.watch=false"
 
   paperless-db:
     image: docker.io/library/postgres:18
@@ -540,6 +543,9 @@ services:
       - POSTGRES_DB=paperless
       - POSTGRES_USER=paperless
       - POSTGRES_PASSWORD=${PAPERLESS_DB_PASSWORD}
+    labels:
+      # WUD semver watch upgrades 18 -> 19beta*; pin compose tags
+      - "wud.watch=false"
 
   paperless-gotenberg:
     image: docker.io/gotenberg/gotenberg:8
@@ -552,6 +558,9 @@ services:
       - "--chromium-disable-javascript=true"
       - "--chromium-allow-list=file:///tmp/.*"
       - "--api-timeout=60s"
+    labels:
+      # WUD upgrades 8 -> 8-libreoffice-cloudrun (breaks chromium flags)
+      - "wud.watch=false"
 
   paperless-tika:
     image: docker.io/apache/tika:latest
@@ -559,6 +568,8 @@ services:
     restart: unless-stopped
     networks:
       - riverdale_network
+    labels:
+      - "wud.watch=false"
 
   paperless:
     image: ghcr.io/paperless-ngx/paperless-ngx:latest
@@ -606,7 +617,7 @@ services:
       - "traefik.http.routers.paperless.rule=Host(`paperless.lan`)"
       - "traefik.http.routers.paperless.entrypoints=web"
       - "traefik.http.services.paperless.loadbalancer.server.port=8000"
-      - "wud.watch=true"
+      - "wud.watch=false"
 
   # whoami - Simple service for testing Traefik
   whoami:
