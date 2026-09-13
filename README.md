@@ -90,7 +90,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 - **ntfy** (8090): Self-hosted push notifications, wired into Sonarr, Radarr, Prowlarr, Maintainerr and WUD
 - **Bazarr** (6767): Automatic subtitle downloads for Sonarr/Radarr
 - **Recyclarr**: No web UI. Headless container that syncs TRaSH Guides custom formats and quality-size definitions into Sonarr/Radarr on a daily schedule
-- **Paperless-ngx** (8000): Document management with OCR (Postgres + Valkey + Gotenberg + Tika)
+- **Paperless-ngx** (8000): Document management with OCR (Postgres + Valkey + Gotenberg + Tika). Updates are manual (`docker compose pull paperless paperless-db paperless-redis paperless-gotenberg paperless-tika`) because WUD watch is disabled on those services.
 
 ## 🔧 Prerequisites
 

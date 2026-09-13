@@ -569,6 +569,7 @@ services:
     networks:
       - riverdale_network
     labels:
+      # WUD: pin compose tags; update Paperless helpers manually with the app
       - "wud.watch=false"
 
   paperless:
@@ -586,9 +587,9 @@ services:
       - "${PAPERLESS_PORT:-8000}:8000"
     volumes:
       - ${CONFIG_ROOT}/paperless/data:/usr/src/paperless/data
-      - ${PAPERLESS_ROOT}/media:/usr/src/paperless/media
-      - ${PAPERLESS_ROOT}/consume:/usr/src/paperless/consume
-      - ${PAPERLESS_ROOT}/export:/usr/src/paperless/export
+      - ${PAPERLESS_ROOT:-/mnt/media-storage/paperless}/media:/usr/src/paperless/media
+      - ${PAPERLESS_ROOT:-/mnt/media-storage/paperless}/consume:/usr/src/paperless/consume
+      - ${PAPERLESS_ROOT:-/mnt/media-storage/paperless}/export:/usr/src/paperless/export
     environment:
       - TZ=${TZ}
       - USERMAP_UID=${PUID}
@@ -617,6 +618,7 @@ services:
       - "traefik.http.routers.paperless.rule=Host(`paperless.lan`)"
       - "traefik.http.routers.paperless.entrypoints=web"
       - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+      # WUD: :latest + auto-update is risky; pull Paperless stack manually
       - "wud.watch=false"
 
   # whoami - Simple service for testing Traefik
