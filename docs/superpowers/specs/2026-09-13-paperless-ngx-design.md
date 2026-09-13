@@ -110,12 +110,11 @@ Compose wiring (non-secret):
 
 ### Init directories
 
-Extend `docker-compose.init.yml` to create:
+Extend `docker-compose.init.yml`:
 
-- `/config/paperless/{data,pgdata,redis}`
-- Under a paperless data root mounted from `/mnt/media-storage/paperless`: `{media,consume,export}`
-
-(Or mkdir those paths on the host as part of implementation if init volume mapping needs a small adjustment.)
+- Mount host `/mnt/media-storage/paperless` (or `${DATA_ROOT}/../paperless` equivalent) in addition to existing `/config` mounts
+- Create `/config/paperless/{data,pgdata,redis}` and `/paperless/{media,consume,export}` (container paths) with `PUID`/`PGID` ownership
+- Do not place Paperless documents under `/media/movies` or `/media/tv`
 
 ### Backups
 
