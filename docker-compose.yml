@@ -298,6 +298,8 @@ services:
       - "3100:3000"  # WUD web UI
     environment:
       - TZ=${TZ}
+      - WUD_AUTH_ADMIN_USER=${WUD_AUTH_ADMIN_USER}
+      - WUD_AUTH_ADMIN_PASSWORD=${WUD_AUTH_ADMIN_PASSWORD}
       - WUD_WATCHER_LOCAL_SOCKET=/var/run/docker.sock
       - WUD_WATCHER_LOCAL_CRON=0 4 * * *  # Daily at 4:00 AM
       - WUD_WATCHER_LOCAL_WATCHBYDEFAULT=true
@@ -515,6 +517,96 @@ services:
     restart: unless-stopped
     networks:
       - riverdale_network
+
+  # Paperless-ngx - Document management (OCR / archive)
+  paperless-redis:
+    image: docker.io/valkey/valkey:9-alpine
+    container_name: paperless-redis
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    volumes:
+      - ${CONFIG_ROOT}/paperless/redis:/data
+
+  paperless-db:
+    image: docker.io/library/postgres:18
+    container_name: paperless-db
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    volumes:
+      - ${CONFIG_ROOT}/paperless/pgdata:/var/lib/postgresql
+    environment:
+      - POSTGRES_DB=paperless
+      - POSTGRES_USER=paperless
+      - POSTGRES_PASSWORD=${PAPERLESS_DB_PASSWORD}
+
+  paperless-gotenberg:
+    image: docker.io/gotenberg/gotenberg:8
+    container_name: paperless-gotenberg
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+      - "--api-timeout=60s"
+
+  paperless-tika:
+    image: docker.io/apache/tika:latest
+    container_name: paperless-tika
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    depends_on:
+      - paperless-db
+      - paperless-redis
+      - paperless-gotenberg
+      - paperless-tika
+    networks:
+      - riverdale_network
+    ports:
+      - "${PAPERLESS_PORT:-8000}:8000"
+    volumes:
+      - ${CONFIG_ROOT}/paperless/data:/usr/src/paperless/data
+      - ${PAPERLESS_ROOT}/media:/usr/src/paperless/media
+      - ${PAPERLESS_ROOT}/consume:/usr/src/paperless/consume
+      - ${PAPERLESS_ROOT}/export:/usr/src/paperless/export
+    environment:
+      - TZ=${TZ}
+      - USERMAP_UID=${PUID}
+      - USERMAP_GID=${PGID}
+      - PAPERLESS_REDIS=redis://paperless-redis:6379
+      - PAPERLESS_DBENGINE=postgresql
+      - PAPERLESS_DBHOST=paperless-db
+      - PAPERLESS_DBNAME=paperless
+      - PAPERLESS_DBUSER=paperless
+      - PAPERLESS_DBPASS=${PAPERLESS_DB_PASSWORD}
+      - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}
+      - PAPERLESS_URL=http://paperless.lan
+      - PAPERLESS_ADMIN_USER=${PAPERLESS_ADMIN_USER}
+      - PAPERLESS_ADMIN_PASSWORD=${PAPERLESS_ADMIN_PASSWORD}
+      - PAPERLESS_TIKA_ENABLED=1
+      - PAPERLESS_TIKA_ENDPOINT=http://paperless-tika:9998
+      - PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://paperless-gotenberg:3000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless.rule=Host(`paperless.lan`)"
+      - "traefik.http.routers.paperless.entrypoints=web"
+      - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+      - "wud.watch=true"
 
   # whoami - Simple service for testing Traefik
   whoami:
