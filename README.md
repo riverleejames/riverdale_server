@@ -18,6 +18,7 @@ This setup provides a full-featured media server with the following capabilities
 - **Push notifications** with ntfy (Sonarr, Radarr, Prowlarr, Maintainerr, WUD)
 - **Automatic subtitles** with Bazarr
 - **Automated quality profile/custom format sync** with Recyclarr (TRaSH Guides)
+- **Document management** with Paperless-ngx (OCR, tags, full-text search)
 
 ## 📁 Project Structure
 
@@ -51,6 +52,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **Homarr** | `homarr.lan` | Unified services dashboard |
 | **ntfy** | `ntfy.lan` | Push notifications |
 | **Bazarr** | `bazarr.lan` | Subtitle management |
+| **Paperless** | `paperless.lan` | Document management (OCR/archive) |
 | **Whoami** | `whoami.lan` | Traefik routing test |
 
 ### Direct Port Access
@@ -69,6 +71,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **Homarr** | `http://localhost:7575` | 7575 | Services dashboard |
 | **ntfy** | `http://localhost:8090` | 8090 | Push notifications |
 | **Bazarr** | `http://localhost:6767` | 6767 | Subtitle management |
+| **Paperless** | `http://localhost:8000` | 8000 | Document management |
 
 ## 📋 Service Details
 
@@ -87,6 +90,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 - **ntfy** (8090): Self-hosted push notifications, wired into Sonarr, Radarr, Prowlarr, Maintainerr and WUD
 - **Bazarr** (6767): Automatic subtitle downloads for Sonarr/Radarr
 - **Recyclarr**: No web UI. Headless container that syncs TRaSH Guides custom formats and quality-size definitions into Sonarr/Radarr on a daily schedule
+- **Paperless-ngx** (8000): Document management with OCR (Postgres + Valkey + Gotenberg + Tika)
 
 ## 🔧 Prerequisites
 
@@ -112,7 +116,12 @@ Data Storage (configured in `.env`):
 │   ├── homarr/
 │   ├── ntfy/
 │   ├── bazarr/
-│   └── recyclarr/
+│   ├── recyclarr/
+│   └── paperless/
+├── /mnt/media-storage/paperless/  # Paperless document library
+│   ├── media/
+│   ├── consume/                   # Drop PDFs here for ingest
+│   └── export/
 ├── /mnt/media-storage/downloads/  # Download staging
 │   ├── complete/
 │   │   ├── movies/
