@@ -25,7 +25,7 @@ services:
         mkdir -p /downloads/incomplete
         mkdir -p /downloads/watch
         # Creating config directories
-        mkdir -p /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/flood
+        mkdir -p /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/flood /config/plex /config/jellyfin /config/watchstate
         mkdir -p /config/wud /config/seerr /config/telegram-bot /config/maintainerr /config/boxarr /config/traefik /config/glances /config/homarr /config/ntfy/cache /config/ntfy/etc /config/bazarr /config/recyclarr
         mkdir -p /config/paperless/data /config/paperless/pgdata /config/paperless/redis
         mkdir -p /paperless/media /paperless/consume /paperless/export
