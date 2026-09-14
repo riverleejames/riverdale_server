@@ -10,7 +10,7 @@ This setup provides a full-featured media server with the following capabilities
 - **Automated TV show management** with Sonarr
 - **Automated movie management** with Radarr
 - **Torrent indexer management** with Prowlarr
-- **Media streaming** with Plex (with Intel QuickSync hardware acceleration)
+- **Media streaming** with Jellyfin v12 (Intel QuickSync)
 - **Reverse proxy** with Traefik for clean domain access
 - **System monitoring** with Glances
 - **Container update monitoring** with WUD (What's Up Docker)
@@ -36,7 +36,7 @@ riverdale_server/
 Most services are accessible via clean domain names through Traefik reverse proxy.
 
 **Note:** We use `.lan` domains (instead of `.local`) to avoid mDNS conflicts.
-**Note:** Plex runs in host mode and is accessed directly (not through Traefik).
+**Note:** Jellyfin is on Traefik (`jellyfin.lan`) and also on host port 8096.
 
 ### Main Services (via Traefik - Port 80)
 
@@ -53,13 +53,14 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **ntfy** | `ntfy.lan` | Push notifications |
 | **Bazarr** | `bazarr.lan` | Subtitle management |
 | **Paperless** | `paperless.lan` | Document management (OCR/archive) |
+| **Jellyfin** | `jellyfin.lan` | Media streaming |
 | **Whoami** | `whoami.lan` | Traefik routing test |
 
 ### Direct Port Access
 
 | Service | URL | Port | Notes |
 | :--- | :--- | :--- | :--- |
-| **Plex** | `http://localhost:32400/web` | 32400 | Media streaming |
+| **Jellyfin** | `http://localhost:8096` | 8096 | Media streaming |
 | **Flood** | `http://localhost:3000` | 3000 | Torrent UI |
 | **Transmission** | `http://localhost:9091` | 9091 | Torrent client |
 | **Sonarr** | `http://localhost:8989` | 8989 | TV management |
@@ -79,7 +80,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 
 - **Transmission**: Torrent client
 - **Flood**: Modern web UI for Transmission
-- **Plex** (32400): Media streaming with Intel QuickSync hardware acceleration
+- **Jellyfin** (8096): Media streaming with Intel QuickSync (`jellyfin.lan`)
 - **Sonarr** (8989): Automated TV show downloading and management
 - **Radarr** (7878): Automated movie downloading and management
 - **Prowlarr** (9696): Torrent indexer management and integration
@@ -96,7 +97,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 
 - Docker and Docker Compose installed
 - Sufficient storage space for media and downloads
-- Intel CPU with QuickSync support (optional, for Plex hardware transcoding)
+- Intel CPU with QuickSync support (optional, for Jellyfin hardware transcoding)
 
 ## 📁 Directory Structure
 
@@ -104,7 +105,7 @@ Data Storage (configured in `.env`):
 
 ```text
 ├── /mnt/media-storage/config/     # Application configurations
-│   ├── plex/
+│   ├── jellyfin/
 │   ├── sonarr/
 │   ├── radarr/
 │   ├── prowlarr/
@@ -152,7 +153,7 @@ Traefik Reverse Proxy (Port 80) - *.lan domains
 │                                                         │
 │  ┌───────────────────────────────────────────────────┐   │
 │  │   Media Services                                  │   │
-│  │   Plex, Transmission, Flood, Sonarr, Radarr...   │   │
+│  │   Jellyfin, Transmission, Flood, Sonarr, Radarr...│   │
 │  └───────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -180,7 +181,7 @@ MEDIA_ROOT=/mnt/media-storage/media
 
 # Service Ports
 FLOOD_PORT=3000
-PLEX_PORT=32400
+JELLYFIN_PORT=8096
 SONARR_PORT=8989
 RADARR_PORT=7878
 TRANSMISSION_PORT=9091
@@ -190,9 +191,6 @@ GLANCES_PORT=61208
 # Transmission/Flood Authentication
 USERNAME=your_username
 PASSWORD=your_password
-
-# Plex Configuration
-PLEX_CLAIM=claim-your-token-here
 ```
 
 ### DNS Configuration
@@ -263,14 +261,21 @@ Access <http://flood.lan> and configure:
 3. Host: `transmission`, Port: `9091`
 4. Add root folder: `/movies`
 
-### 5. Plex (Media Server)
+### 5. Jellyfin (Media Server)
 
-1. Access <http://localhost:32400/web>
-2. Sign in with your Plex account
-3. Complete initial setup wizard
-4. Add media libraries:
-   - Movies: `/media/movies`
-   - TV Shows: `/media/tv`
+1. Access <http://jellyfin.lan> or <http://localhost:8096>
+2. Sign in as `river` (password in `${CONFIG_ROOT}/jellyfin/.admin-credentials`)
+3. Libraries:
+   - Movies: `/data/media/movies`
+   - TV Shows: `/data/media/tv`
+4. Dashboard → Playback: Intel QuickSync (`/dev/dri`)
+5. Add a DNS record `jellyfin.lan` → server IP (same as other `.lan` hosts).
+
+**First login:** username `river`. Password is in `${CONFIG_ROOT}/jellyfin/.admin-credentials` (mode 600), generated at install so it is not the Transmission password.
+
+**Maintainerr:** rules are on Jellyfin. Movies groups use the Movies library; TV episode/season groups use the TV library. **Watched TV Seasons** stays disabled (episode-level cleanup is the live TV path).
+
+A point-in-time Plex-era snapshot still exists at `/home/river/backups/pre-jellyfin-2026-09-14/` (see `RESTORE.txt` there). Plex is no longer in compose or on disk.
 
 ### 6. ntfy (Push Notifications)
 
@@ -346,7 +351,7 @@ If `.lan` domains don't work:
 2. Ensure clients are actually using that resolver.
 3. Try `nslookup sonarr.lan <Server-IP>` to verify resolution.
 
-If Plex is reachable by IP/localhost but not by hostname, that is expected unless you create a separate DNS record for Plex and route it independently.
+If Jellyfin is reachable on `:8096` but `jellyfin.lan` NXDOMAINs, add a DNS A record like the other `.lan` hosts.
 
 ### Glances or Web Interface Redirects to Google Search
 

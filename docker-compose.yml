@@ -65,33 +65,40 @@ services:
       - "wud.watch=true"
       - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
-  # Plex - Media Server
-  plex:
-    image: lscr.io/linuxserver/plex:latest
-    container_name: plex
-    network_mode: host
+  # Jellyfin - Media Server (v12)
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - VERSION=docker
-      - PLEX_CLAIM=${PLEX_CLAIM:-}
+      - JELLYFIN_PublishedServerUrl=http://jellyfin.lan
     volumes:
-      - ${CONFIG_ROOT}/plex:/config
+      - ${CONFIG_ROOT}/jellyfin:/config
       - ${DATA_ROOT}/media:/data/media:ro
       - /dev/shm:/transcode
+    ports:
+      - "${JELLYFIN_PORT:-8096}:8096"
     devices:
       - /dev/dri:/dev/dri
+    group_add:
+      - "992"
     restart: unless-stopped
+    networks:
+      - riverdale_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:32400/web || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8096/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.lan`)"
+      - "traefik.http.routers.jellyfin.entrypoints=web"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
       - "wud.watch=true"
-      - "wud.tag.include=^\\d+\\.\\d+\\.\\d+\\.\\d+$$"
 
   # Sonarr - TV Show management
   sonarr:
@@ -238,7 +245,7 @@ services:
     labels:
       - "wud.watch=true"
 
-  # Maintainerr - Automatic library cleanup based on Plex watch status
+  # Maintainerr - Automatic library cleanup based on Jellyfin watch status
   maintainerr:
     image: ghcr.io/maintainerr/maintainerr:latest
     container_name: maintainerr
