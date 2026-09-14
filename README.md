@@ -54,7 +54,6 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **Bazarr** | `bazarr.lan` | Subtitle management |
 | **Paperless** | `paperless.lan` | Document management (OCR/archive) |
 | **Jellyfin** | `jellyfin.lan` | Media streaming |
-| **WatchState** | `watchstate.lan` | Watch-history tool (Jellyfin backend) |
 | **Whoami** | `whoami.lan` | Traefik routing test |
 
 ### Direct Port Access
@@ -62,7 +61,6 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | Service | URL | Port | Notes |
 | :--- | :--- | :--- | :--- |
 | **Jellyfin** | `http://localhost:8096` | 8096 | Media streaming |
-| **WatchState** | `http://localhost:8282` | 8282 | Watch-history sync UI |
 | **Flood** | `http://localhost:3000` | 3000 | Torrent UI |
 | **Transmission** | `http://localhost:9091` | 9091 | Torrent client |
 | **Sonarr** | `http://localhost:8989` | 8989 | TV management |
@@ -83,7 +81,6 @@ Most services are accessible via clean domain names through Traefik reverse prox
 - **Transmission**: Torrent client
 - **Flood**: Modern web UI for Transmission
 - **Jellyfin** (8096): Media streaming with Intel QuickSync (`jellyfin.lan`)
-- **WatchState** (8282): Watch-history tool; used once to import play state from Plex
 - **Sonarr** (8989): Automated TV show downloading and management
 - **Radarr** (7878): Automated movie downloading and management
 - **Prowlarr** (9696): Torrent indexer management and integration
@@ -109,7 +106,6 @@ Data Storage (configured in `.env`):
 ```text
 ├── /mnt/media-storage/config/     # Application configurations
 │   ├── jellyfin/
-│   ├── watchstate/
 │   ├── sonarr/
 │   ├── radarr/
 │   ├── prowlarr/
@@ -186,7 +182,6 @@ MEDIA_ROOT=/mnt/media-storage/media
 # Service Ports
 FLOOD_PORT=3000
 JELLYFIN_PORT=8096
-WATCHSTATE_PORT=8282
 SONARR_PORT=8989
 RADARR_PORT=7878
 TRANSMISSION_PORT=9091
@@ -274,13 +269,11 @@ Access <http://flood.lan> and configure:
    - Movies: `/data/media/movies`
    - TV Shows: `/data/media/tv`
 4. Dashboard → Playback: Intel QuickSync (`/dev/dri`)
-5. Add a DNS record `jellyfin.lan` → server IP (same as other `.lan` hosts). `watchstate.lan` too if you use the WatchState UI.
+5. Add a DNS record `jellyfin.lan` → server IP (same as other `.lan` hosts).
 
 **First login:** username `river`. Password is in `${CONFIG_ROOT}/jellyfin/.admin-credentials` (mode 600), generated at install so it is not the Transmission password.
 
 **Maintainerr:** rules are on Jellyfin. Movies groups use the Movies library; TV episode/season groups use the TV library. **Watched TV Seasons** stays disabled (episode-level cleanup is the live TV path).
-
-**WatchState:** the one-time Plex → Jellyfin import already ran for the owner account. UI at `http://watchstate.lan` (or `:8282`). Credentials: `${CONFIG_ROOT}/watchstate/.admin-credentials`. Only the Jellyfin backend remains.
 
 A point-in-time Plex-era snapshot still exists at `/home/river/backups/pre-jellyfin-2026-09-14/` (see `RESTORE.txt` there). Plex is no longer in compose or on disk.
 

@@ -100,28 +100,6 @@ services:
       - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
       - "wud.watch=true"
 
-  # WatchState - watch-history tool (used for the one-time Plex → Jellyfin import)
-  watchstate:
-    image: ghcr.io/arabcoders/watchstate:latest
-    container_name: watchstate
-    user: "${PUID}:${PGID}"
-    environment:
-      - TZ=${TZ}
-      - WS_TZ=${TZ}
-    volumes:
-      - ${CONFIG_ROOT}/watchstate:/config
-    ports:
-      - "${WATCHSTATE_PORT:-8282}:8080"
-    restart: unless-stopped
-    networks:
-      - riverdale_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.watchstate.rule=Host(`watchstate.lan`)"
-      - "traefik.http.routers.watchstate.entrypoints=web"
-      - "traefik.http.services.watchstate.loadbalancer.server.port=8080"
-      - "wud.watch=true"
-
   # Sonarr - TV Show management
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
