@@ -10,7 +10,7 @@ This setup provides a full-featured media server with the following capabilities
 - **Automated TV show management** with Sonarr
 - **Automated movie management** with Radarr
 - **Torrent indexer management** with Prowlarr
-- **Media streaming** with Jellyfin v12 (Intel QuickSync). Plex stays in compose under profile `plex` for rollback only
+- **Media streaming** with Jellyfin v12 (Intel QuickSync)
 - **Reverse proxy** with Traefik for clean domain access
 - **System monitoring** with Glances
 - **Container update monitoring** with WUD (What's Up Docker)
@@ -36,7 +36,7 @@ riverdale_server/
 Most services are accessible via clean domain names through Traefik reverse proxy.
 
 **Note:** We use `.lan` domains (instead of `.local`) to avoid mDNS conflicts.
-**Note:** Jellyfin is on Traefik (`jellyfin.lan`). Plex is host-mode and only starts with `--profile plex`.
+**Note:** Jellyfin is on Traefik (`jellyfin.lan`) and also on host port 8096.
 
 ### Main Services (via Traefik - Port 80)
 
@@ -54,7 +54,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | **Bazarr** | `bazarr.lan` | Subtitle management |
 | **Paperless** | `paperless.lan` | Document management (OCR/archive) |
 | **Jellyfin** | `jellyfin.lan` | Media streaming |
-| **WatchState** | `watchstate.lan` | Plex → Jellyfin watch-history import |
+| **WatchState** | `watchstate.lan` | Watch-history tool (Jellyfin backend) |
 | **Whoami** | `whoami.lan` | Traefik routing test |
 
 ### Direct Port Access
@@ -63,7 +63,6 @@ Most services are accessible via clean domain names through Traefik reverse prox
 | :--- | :--- | :--- | :--- |
 | **Jellyfin** | `http://localhost:8096` | 8096 | Media streaming |
 | **WatchState** | `http://localhost:8282` | 8282 | Watch-history sync UI |
-| **Plex** | `http://localhost:32400/web` | 32400 | Rollback only (`--profile plex`) |
 | **Flood** | `http://localhost:3000` | 3000 | Torrent UI |
 | **Transmission** | `http://localhost:9091` | 9091 | Torrent client |
 | **Sonarr** | `http://localhost:8989` | 8989 | TV management |
@@ -84,8 +83,7 @@ Most services are accessible via clean domain names through Traefik reverse prox
 - **Transmission**: Torrent client
 - **Flood**: Modern web UI for Transmission
 - **Jellyfin** (8096): Media streaming with Intel QuickSync (`jellyfin.lan`)
-- **WatchState** (8282): One-way Plex → Jellyfin play-state import
-- **Plex** (32400): Not started by default. `docker compose --profile plex up -d plex` for rollback
+- **WatchState** (8282): Watch-history tool; used once to import play state from Plex
 - **Sonarr** (8989): Automated TV show downloading and management
 - **Radarr** (7878): Automated movie downloading and management
 - **Prowlarr** (9696): Torrent indexer management and integration
@@ -112,7 +110,6 @@ Data Storage (configured in `.env`):
 ├── /mnt/media-storage/config/     # Application configurations
 │   ├── jellyfin/
 │   ├── watchstate/
-│   ├── plex/
 │   ├── sonarr/
 │   ├── radarr/
 │   ├── prowlarr/
@@ -188,7 +185,6 @@ MEDIA_ROOT=/mnt/media-storage/media
 
 # Service Ports
 FLOOD_PORT=3000
-PLEX_PORT=32400
 JELLYFIN_PORT=8096
 WATCHSTATE_PORT=8282
 SONARR_PORT=8989
@@ -200,9 +196,6 @@ GLANCES_PORT=61208
 # Transmission/Flood Authentication
 USERNAME=your_username
 PASSWORD=your_password
-
-# Plex Configuration
-PLEX_CLAIM=claim-your-token-here
 ```
 
 ### DNS Configuration
@@ -285,15 +278,11 @@ Access <http://flood.lan> and configure:
 
 **First login:** username `river`. Password is in `${CONFIG_ROOT}/jellyfin/.admin-credentials` (mode 600), generated at install so it is not the Transmission password.
 
-**Maintainerr:** the media-server switch migrated all 7 rules to Jellyfin and deactivated the rule groups until you re-assign Jellyfin libraries in Settings → Rules.
+**Maintainerr:** rules are on Jellyfin. Movies groups use the Movies library; TV episode/season groups use the TV library. **Watched TV Seasons** stays disabled (episode-level cleanup is the live TV path).
 
-**WatchState:** one-way Plex → Jellyfin already ran for the owner account. UI at `http://watchstate.lan` (or `:8282`). Credentials: `${CONFIG_ROOT}/watchstate/.admin-credentials`.
+**WatchState:** the one-time Plex → Jellyfin import already ran for the owner account. UI at `http://watchstate.lan` (or `:8282`). Credentials: `${CONFIG_ROOT}/watchstate/.admin-credentials`. Only the Jellyfin backend remains.
 
-Plex is retained for rollback only. Snapshot and restore steps live in `/home/river/backups/pre-jellyfin-2026-09-14/RESTORE.txt`. To start Plex without switching the rest of the stack back:
-
-```bash
-docker compose --profile plex up -d plex
-```
+A point-in-time Plex-era snapshot still exists at `/home/river/backups/pre-jellyfin-2026-09-14/` (see `RESTORE.txt` there). Plex is no longer in compose or on disk.
 
 ### 6. ntfy (Push Notifications)
 
@@ -369,7 +358,7 @@ If `.lan` domains don't work:
 2. Ensure clients are actually using that resolver.
 3. Try `nslookup sonarr.lan <Server-IP>` to verify resolution.
 
-If Jellyfin is reachable on `:8096` but `jellyfin.lan` NXDOMAINs, add a DNS A record like the other `.lan` hosts. Plex (when started with `--profile plex`) is host-mode and has no Traefik hostname.
+If Jellyfin is reachable on `:8096` but `jellyfin.lan` NXDOMAINs, add a DNS A record like the other `.lan` hosts.
 
 ### Glances or Web Interface Redirects to Google Search
 

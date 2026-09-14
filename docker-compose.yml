@@ -65,37 +65,7 @@ services:
       - "wud.watch=true"
       - "wud.tag.include=^\\d+\\.\\d+\\.\\d+$$"
 
-  # Plex - Media Server
-  plex:
-    image: lscr.io/linuxserver/plex:latest
-    container_name: plex
-    network_mode: host
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - VERSION=docker
-      - PLEX_CLAIM=${PLEX_CLAIM:-}
-    volumes:
-      - ${CONFIG_ROOT}/plex:/config
-      - ${DATA_ROOT}/media:/data/media:ro
-      - /dev/shm:/transcode
-    devices:
-      - /dev/dri:/dev/dri
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:32400/web || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    labels:
-      - "wud.watch=true"
-      - "wud.tag.include=^\\d+\\.\\d+\\.\\d+\\.\\d+$$"
-    profiles:
-      - plex
-
-  # Jellyfin - Media Server (v12). Plex remains under profile `plex` for rollback.
+  # Jellyfin - Media Server (v12)
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
@@ -130,7 +100,7 @@ services:
       - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
       - "wud.watch=true"
 
-  # WatchState - one-way Plex → Jellyfin watch-history import (and optional reverse on revert)
+  # WatchState - watch-history tool (used for the one-time Plex → Jellyfin import)
   watchstate:
     image: ghcr.io/arabcoders/watchstate:latest
     container_name: watchstate
@@ -142,8 +112,6 @@ services:
       - ${CONFIG_ROOT}/watchstate:/config
     ports:
       - "${WATCHSTATE_PORT:-8282}:8080"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     networks:
       - riverdale_network
@@ -299,7 +267,7 @@ services:
     labels:
       - "wud.watch=true"
 
-  # Maintainerr - Automatic library cleanup based on Plex watch status
+  # Maintainerr - Automatic library cleanup based on Jellyfin watch status
   maintainerr:
     image: ghcr.io/maintainerr/maintainerr:latest
     container_name: maintainerr
