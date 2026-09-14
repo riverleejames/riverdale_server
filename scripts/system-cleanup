@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Launcher for system_cleanup.py — runs it with the venv's interpreter
+# so textual/rich are on the path without needing to activate anything.
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ ! -x "$DIR/.venv/bin/python3" ]]; then
+    echo "Virtualenv not found at $DIR/.venv — run:" >&2
+    echo "  python3 -m venv $DIR/.venv && $DIR/.venv/bin/pip install -r $DIR/requirements.txt" >&2
+    exit 1
+fi
+
+exec "$DIR/.venv/bin/python3" "$DIR/system_cleanup.py" "$@"
