@@ -298,6 +298,8 @@ services:
       - "3100:3000"  # WUD web UI
     environment:
       - TZ=${TZ}
+      - WUD_AUTH_ADMIN_USER=${WUD_AUTH_ADMIN_USER}
+      - WUD_AUTH_ADMIN_PASSWORD=${WUD_AUTH_ADMIN_PASSWORD}
       - WUD_WATCHER_LOCAL_SOCKET=/var/run/docker.sock
       - WUD_WATCHER_LOCAL_CRON=0 4 * * *  # Daily at 4:00 AM
       - WUD_WATCHER_LOCAL_WATCHBYDEFAULT=true
@@ -409,14 +411,15 @@ services:
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
       - "wud.watch=true"
 
-  # Homarr - Unified dashboard for all services
+  # Homarr - Unified dashboard for all services (V2 public beta)
   homarr:
-    image: ghcr.io/homarr-labs/homarr:latest
+    image: ghcr.io/homarr-labs/homarr-test:v2
     container_name: homarr
     environment:
       - TZ=${TZ}
       - SECRET_ENCRYPTION_KEY=${HOMARR_SECRET_ENCRYPTION_KEY}
       - ENABLE_DOCKER=true
+      - WORKSHOP_API_URL=https://v2.preview.homarr.dev/
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CONFIG_ROOT}/homarr:/appdata
@@ -470,6 +473,153 @@ services:
       - "traefik.http.routers.ntfy.entrypoints=web"
       - "traefik.http.services.ntfy.loadbalancer.server.port=80"
       - "wud.watch=true"
+
+  # Bazarr - Automatic subtitle downloads for Sonarr/Radarr
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/bazarr:/config
+      - ${DATA_ROOT}:/data
+    ports:
+      - "${BAZARR_PORT:-6767}:6767"
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6767/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bazarr.rule=Host(`bazarr.lan`)"
+      - "traefik.http.routers.bazarr.entrypoints=web"
+      - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
+      - "wud.watch=true"
+
+  # Recyclarr - Syncs TRaSH Guides quality definitions and custom formats into Sonarr/Radarr on a schedule
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:8
+    container_name: recyclarr
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=${TZ}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      - RADARR_API_KEY=${RADARR_API_KEY}
+    volumes:
+      - ${CONFIG_ROOT}/recyclarr:/config
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+
+  # Paperless-ngx - Document management (OCR / archive)
+  paperless-redis:
+    image: docker.io/valkey/valkey:9-alpine
+    container_name: paperless-redis
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    volumes:
+      - ${CONFIG_ROOT}/paperless/redis:/data
+    labels:
+      # WUD semver watch upgrades 9-alpine -> 9-trixie; pin compose tags
+      - "wud.watch=false"
+
+  paperless-db:
+    image: docker.io/library/postgres:18
+    container_name: paperless-db
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    volumes:
+      - ${CONFIG_ROOT}/paperless/pgdata:/var/lib/postgresql
+    environment:
+      - POSTGRES_DB=paperless
+      - POSTGRES_USER=paperless
+      - POSTGRES_PASSWORD=${PAPERLESS_DB_PASSWORD}
+    labels:
+      # WUD semver watch upgrades 18 -> 19beta*; pin compose tags
+      - "wud.watch=false"
+
+  paperless-gotenberg:
+    image: docker.io/gotenberg/gotenberg:8
+    container_name: paperless-gotenberg
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+      - "--api-timeout=60s"
+    labels:
+      # WUD upgrades 8 -> 8-libreoffice-cloudrun (breaks chromium flags)
+      - "wud.watch=false"
+
+  paperless-tika:
+    image: docker.io/apache/tika:latest
+    container_name: paperless-tika
+    restart: unless-stopped
+    networks:
+      - riverdale_network
+    labels:
+      # WUD: pin compose tags; update Paperless helpers manually with the app
+      - "wud.watch=false"
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    depends_on:
+      - paperless-db
+      - paperless-redis
+      - paperless-gotenberg
+      - paperless-tika
+    networks:
+      - riverdale_network
+    ports:
+      - "${PAPERLESS_PORT:-8000}:8000"
+    volumes:
+      - ${CONFIG_ROOT}/paperless/data:/usr/src/paperless/data
+      - ${PAPERLESS_ROOT:-/mnt/media-storage/paperless}/media:/usr/src/paperless/media
+      - ${PAPERLESS_ROOT:-/mnt/media-storage/paperless}/consume:/usr/src/paperless/consume
+      - ${PAPERLESS_ROOT:-/mnt/media-storage/paperless}/export:/usr/src/paperless/export
+    environment:
+      - TZ=${TZ}
+      - USERMAP_UID=${PUID}
+      - USERMAP_GID=${PGID}
+      - PAPERLESS_REDIS=redis://paperless-redis:6379
+      - PAPERLESS_DBENGINE=postgresql
+      - PAPERLESS_DBHOST=paperless-db
+      - PAPERLESS_DBNAME=paperless
+      - PAPERLESS_DBUSER=paperless
+      - PAPERLESS_DBPASS=${PAPERLESS_DB_PASSWORD}
+      - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}
+      - PAPERLESS_URL=http://paperless.lan
+      - PAPERLESS_ADMIN_USER=${PAPERLESS_ADMIN_USER}
+      - PAPERLESS_ADMIN_PASSWORD=${PAPERLESS_ADMIN_PASSWORD}
+      - PAPERLESS_TIKA_ENABLED=1
+      - PAPERLESS_TIKA_ENDPOINT=http://paperless-tika:9998
+      - PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://paperless-gotenberg:3000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless.rule=Host(`paperless.lan`)"
+      - "traefik.http.routers.paperless.entrypoints=web"
+      - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+      # WUD: :latest + auto-update is risky; pull Paperless stack manually
+      - "wud.watch=false"
 
   # whoami - Simple service for testing Traefik
   whoami:

@@ -11,6 +11,7 @@ services:
       - ${MEDIA_ROOT}:/media
       - ${DOWNLOADS_ROOT}:/downloads
       - ${CONFIG_ROOT}:/config
+      - ${PAPERLESS_ROOT}:/paperless
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -25,10 +26,14 @@ services:
         mkdir -p /downloads/watch
         # Creating config directories
         mkdir -p /config/sonarr /config/radarr /config/prowlarr /config/transmission /config/flood
-        mkdir -p /config/wud /config/seerr /config/telegram-bot /config/maintainerr /config/boxarr /config/traefik /config/glances /config/homarr /config/ntfy/cache /config/ntfy/etc
+        mkdir -p /config/wud /config/seerr /config/telegram-bot /config/maintainerr /config/boxarr /config/traefik /config/glances /config/homarr /config/ntfy/cache /config/ntfy/etc /config/bazarr /config/recyclarr
+        mkdir -p /config/paperless/data /config/paperless/pgdata /config/paperless/redis
+        mkdir -p /paperless/media /paperless/consume /paperless/export
         echo 'Setting proper ownership and permissions...'
         chown -R \$${PUID}:\$${PGID} /media /downloads /config 2>/dev/null || true
+        chown -R \$${PUID}:\$${PGID} /paperless 2>/dev/null || true
         chmod -R 755 /media /downloads /config 2>/dev/null || true
+        chmod -R 755 /paperless 2>/dev/null || true
         echo 'Ensuring correct ownership of critical directories...'
         chown -R \$${PUID}:\$${PGID} /downloads/complete/tv-sonarr /downloads/complete/radarr 2>/dev/null || true
         echo 'Setting execute permissions on media files for proper import...'
